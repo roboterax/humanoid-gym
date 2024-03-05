@@ -1,9 +1,8 @@
 # Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer
 
-![Demo](./demo_open.gif)
-
-
 **[[Project Page]](https://sites.google.com/view/humanoid-gym/)**
+
+![Demo](./images/demo.gif)
 
 Welcome to our Humanoid-Gym! 
 
@@ -171,10 +170,11 @@ mv ${YOUR_CONDA_ENV}/lib/libstdc++* ${YOUR_CONDA_ENV}/lib/_unused
 
 Please cite the following if you use this code or parts of it:
 ```
-@software{RobotEra_Humanoid-Gym,
+@software{RobotEra2024Humanoid-Gym,
   author = {RobotEra},
   title = {{Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer}},
-  url = {https://github.com/roboterax/humanoid-gym}
+  url = {https://github.com/roboterax/humanoid-gym},
+  year = {2024}
 }
 ```
 
