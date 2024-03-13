@@ -149,15 +149,16 @@ class XBotLCfg(LeggedRobotCfg):
             # 0: never, 1: last sub-step, 2: all sub-steps (default=2)
             contact_collection = 2
 
-    class domain_rand(LeggedRobotCfg.domain_rand):
+    class domain_rand:
+        randomize_friction = True
         friction_range = [0.1, 2.0]
         randomize_base_mass = True
         added_mass_range = [-5., 5.]
-        restitution_range = [0.0, 0.1]
         push_robots = True
         push_interval_s = 4
         max_push_vel_xy = 0.2
         max_push_ang_vel = 0.4
+        dynamic_randomization = 0.05
 
     class commands(LeggedRobotCfg.commands):
         # Vers: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)

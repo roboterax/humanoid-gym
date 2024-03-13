@@ -258,21 +258,15 @@ class LeggedRobot(BaseTask):
             if env_id==0:
                 # prepare friction randomization
                 friction_range = self.cfg.domain_rand.friction_range
-                restitution_range = self.cfg.domain_rand.restitution_range
                 num_buckets = 256
                 bucket_ids = torch.randint(0, num_buckets, (self.num_envs, 1))
                 friction_buckets = torch_rand_float(friction_range[0], friction_range[1], (num_buckets,1), device='cpu')
-                restitution_buckets = torch_rand_float(restitution_range[0], restitution_range[1], (num_buckets,1), device='cpu')
                 self.friction_coeffs = friction_buckets[bucket_ids]
-                self.restitution_coeffs = restitution_buckets[bucket_ids]
 
             for s in range(len(props)):
                 props[s].friction = self.friction_coeffs[env_id]
-                props[s].restitution = self.restitution_coeffs[env_id]
-                
-            self.env_frictions[env_id] = self.friction_coeffs[env_id]
-            
         return props
+    
 
     def _process_dof_props(self, props, env_id):
         """ Callback allowing to store/change/randomize the DOF properties of each environment.
@@ -357,9 +351,7 @@ class LeggedRobot(BaseTask):
         # control_type = self.cfg.control.control_type
         p_gains = self.p_gains
         d_gains = self.d_gains
-        torques = p_gains * \
-            (actions_scaled + self.default_dof_pos -
-             self.dof_pos) - d_gains * self.dof_vel
+        torques = p_gains * (actions_scaled + self.default_dof_pos - self.dof_pos) - d_gains * self.dof_vel
         return torch.clip(torques, -self.torque_limits, self.torque_limits)
 
     
@@ -389,12 +381,12 @@ class LeggedRobot(BaseTask):
         if self.custom_origins:
             self.root_states[env_ids] = self.base_init_state
             self.root_states[env_ids, :3] += self.env_origins[env_ids]
-            self.root_states[env_ids, :2] += torch_rand_float(-4., 4., (len(env_ids), 2), device=self.device) # xy position within 1m of the center
+            self.root_states[env_ids, :2] += torch_rand_float(-1., 1., (len(env_ids), 2), device=self.device) # xy position within 1m of the center
         else:
             self.root_states[env_ids] = self.base_init_state
             self.root_states[env_ids, :3] += self.env_origins[env_ids]
         # base velocities
-        # self.root_states[env_ids, 7:13] = torch_rand_float(-0.01, 0.01, (len(env_ids), 6), device=self.device) # [7:10]: lin vel, [10:13]: ang vel
+        self.root_states[env_ids, 7:13] = torch_rand_float(-0.05, 0.05, (len(env_ids), 6), device=self.device) # [7:10]: lin vel, [10:13]: ang vel
         if self.cfg.asset.fix_base_link:
             self.root_states[env_ids, 7:13] = 0
             self.root_states[env_ids, 2] += 1.8
@@ -402,15 +394,6 @@ class LeggedRobot(BaseTask):
         self.gym.set_actor_root_state_tensor_indexed(self.sim,
                                                      gymtorch.unwrap_tensor(self.root_states),
                                                      gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
-
-    # def _push_robots(self):
-    #     """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity. 
-    #     """
-    #     max_vel = self.cfg.domain_rand.max_push_vel_xy
-    #     max_push_angular = self.cfg.domain_rand.max_push_ang_vel
-    #     self.root_states[:, 7:9] = torch_rand_float(-max_vel, max_vel, (self.num_envs, 2), device=self.device) # lin vel x/y
-    #     self.root_states[:, 10:13] = torch_rand_float(-max_push_angular, max_push_angular, (self.num_envs, 3), device=self.device) # ang vel
-    #     self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.root_states))
 
 
     def _update_terrain_curriculum(self, env_ids):
