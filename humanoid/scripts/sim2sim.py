@@ -118,6 +118,7 @@ def run_mujoco(policy, cfg):
         q = q[-cfg.env.num_actions:]
         dq = dq[-cfg.env.num_actions:]
 
+        # 1000hz -> 100hz
         if count_lowlevel % cfg.sim_config.decimation == 0:
 
             obs = np.zeros([1, cfg.env.num_single_obs], dtype=np.float32)
@@ -148,18 +149,18 @@ def run_mujoco(policy, cfg):
 
             target_q = action * cfg.control.action_scale
 
-        count_lowlevel += 1
 
         target_dq = np.zeros((cfg.env.num_actions), dtype=np.double)
         # Generate PD control
         tau = pd_control(target_q, q, cfg.robot_config.kps,
                         target_dq, dq, cfg.robot_config.kds)  # Calc torques
         tau = np.clip(tau, -cfg.robot_config.tau_limit, cfg.robot_config.tau_limit)  # Clamp torques
-
         data.ctrl = tau
 
         mujoco.mj_step(model, data)
         viewer.render()
+        count_lowlevel += 1
+
     viewer.close()
 
 
@@ -180,8 +181,8 @@ if __name__ == '__main__':
             else:
                 mujoco_model_path = f'{LEGGED_GYM_ROOT_DIR}/resources/robots/XBot/mjcf/XBot-L.xml'
             sim_duration = 60.0
-            dt = 0.002
-            decimation = 5
+            dt = 0.001
+            decimation = 10
 
         class robot_config:
             kps = np.array([200, 200, 350, 350, 15, 15, 200, 200, 350, 350, 15, 15], dtype=np.double)
