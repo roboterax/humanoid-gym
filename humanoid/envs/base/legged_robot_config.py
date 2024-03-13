@@ -88,7 +88,6 @@ class LeggedRobotCfg(BaseConfig):
             "joint_b": 0.}
 
     class control:
-        control_type = 'P' # P: position, V: velocity, T: torques
         # PD Drive parameters:
         stiffness = {'joint_a': 10.0, 'joint_b': 15.}  # [N*m/rad]
         damping = {'joint_a': 1.0, 'joint_b': 1.5}     # [N*m*s/rad]
@@ -119,28 +118,15 @@ class LeggedRobotCfg(BaseConfig):
         armature = 0.
         thickness = 0.01
 
+
     class domain_rand:
         randomize_friction = True
         friction_range = [0.5, 1.25]
-        randomize_base_mass = True
+        randomize_base_mass = False
         added_mass_range = [-1., 1.]
         push_robots = True
-        push_interval_s = 4
+        push_interval_s = 15
         max_push_vel_xy = 1.
-        max_push_ang_vel = 3.
-        continuous_push = True
-        max_push_force = 1
-        max_push_torque = 1
-        push_force_noise = 1
-        push_torque_noise = 1
-        randomize_gains = True
-        p_gain_range = [0.7, 1.3]
-        d_gain_range = [0.7, 1.3]
-        randomize_torques = True
-        torque_range = [0.8, 1.2]
-        
-        randomize_link_mass = True
-        link_mass_range = [-1.0, 1.0]
 
 
     class rewards:

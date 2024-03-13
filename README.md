@@ -57,9 +57,9 @@ Denoising World Model Learning(DWL) presents an advanced sim-to-real framework t
 #### Examples
 
 ```bash
-# Launching PPO Policy Training for 'v1' Across 8192 Environments
+# Launching PPO Policy Training for 'v1' Across 4096 Environments
 # This command initiates the PPO algorithm-based training for the humanoid task.
-python scripts/train.py --task=humanoid_ppo --run_name v1 --headless --num_envs 8192
+python scripts/train.py --task=humanoid_ppo --run_name v1 --headless --num_envs 4096
 
 # Evaluating the Trained PPO Policy 'v1'
 # This command loads the 'v1' policy for performance assessment in its environment. 

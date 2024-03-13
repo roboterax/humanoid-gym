@@ -1,6 +1,6 @@
 <mujoco model="XBot-L">
   <compiler angle="radian" meshdir="../meshes/" eulerseq="zyx"/>
-    <option timestep='0.002' iterations='50' solver='PGS' gravity='0 0 -9.81'>
+    <option timestep='0.001' iterations='50' solver='PGS' gravity='0 0 -9.81'>
     <flag sensornoise="enable" frictionloss="enable"/>
     </option>
     <size njmax="500" nconmax="100" />

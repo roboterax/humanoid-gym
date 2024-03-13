@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
@@ -30,6 +30,7 @@
 
 from humanoid.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
+
 class XBotLCfg(LeggedRobotCfg):
     """
     Configuration class for the XBotL humanoid robot.
@@ -44,7 +45,7 @@ class XBotLCfg(LeggedRobotCfg):
         num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
         num_actions = 12
         num_envs = 4096
-        episode_length_s = 24 # episode length in seconds
+        episode_length_s = 24  # episode length in seconds
         use_ref_actions = False
 
     class safety:
@@ -52,7 +53,6 @@ class XBotLCfg(LeggedRobotCfg):
         pos_limit = 1.0
         vel_limit = 1.0
         torque_limit = 0.85
-
 
     class asset(LeggedRobotCfg.asset):
         file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/XBot/urdf/XBot-L.urdf'
@@ -90,13 +90,12 @@ class XBotLCfg(LeggedRobotCfg):
         noise_level = 0.6    # scales other values
 
         class noise_scales:
-            dof_pos = 0.05  
-            dof_vel = 0.5 
-            ang_vel = 0.1   
-            lin_vel = 0.05   
+            dof_pos = 0.05
+            dof_vel = 0.5
+            ang_vel = 0.1
+            lin_vel = 0.05
             quat = 0.03
             height_measurements = 0.1
-
 
     class init_state(LeggedRobotCfg.init_state):
         pos = [0.0, 0.0, 0.95]
@@ -118,11 +117,9 @@ class XBotLCfg(LeggedRobotCfg):
 
     class control(LeggedRobotCfg.control):
         # PD Drive parameters:
-        control_type = 'P'
-
-        stiffness = {'leg_roll': 200.0, 'leg_pitch': 350.0,'leg_yaw': 200.0,
+        stiffness = {'leg_roll': 200.0, 'leg_pitch': 350.0, 'leg_yaw': 200.0,
                      'knee': 350.0, 'ankle': 15}
-        damping = {'leg_roll': 10, 'leg_pitch': 10,'leg_yaw': 
+        damping = {'leg_roll': 10, 'leg_pitch': 10, 'leg_yaw':
                    10, 'knee': 10, 'ankle': 10}
 
         # action scale: target angle = actionScale * action + defaultAngle
@@ -142,22 +139,23 @@ class XBotLCfg(LeggedRobotCfg):
             num_velocity_iterations = 0
             contact_offset = 0.01  # [m]
             rest_offset = 0.0   # [m]
-            bounce_threshold_velocity = 0.1  # 0.5 #0.5 [m/s]
+            bounce_threshold_velocity = 0.1  # [m/s]
             max_depenetration_velocity = 1.0
             max_gpu_contact_pairs = 2**23  # 2**24 -> needed for 8000 envs and more
             default_buffer_size_multiplier = 5
             # 0: never, 1: last sub-step, 2: all sub-steps (default=2)
             contact_collection = 2
 
-    class domain_rand(LeggedRobotCfg.domain_rand):
+    class domain_rand:
+        randomize_friction = True
         friction_range = [0.1, 2.0]
         randomize_base_mass = True
         added_mass_range = [-5., 5.]
-        restitution_range = [0.0, 0.1]
         push_robots = True
         push_interval_s = 4
         max_push_vel_xy = 0.2
         max_push_ang_vel = 0.4
+        dynamic_randomization = 0.02
 
     class commands(LeggedRobotCfg.commands):
         # Vers: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
@@ -166,25 +164,25 @@ class XBotLCfg(LeggedRobotCfg):
         heading_command = True  # if true: compute ang vel command from heading error
 
         class ranges:
-            lin_vel_x = [-0.3, 0.6] # min max [m/s] 
+            lin_vel_x = [-0.3, 0.6]  # min max [m/s]
             lin_vel_y = [-0.3, 0.3]   # min max [m/s]
             ang_vel_yaw = [-0.3, 0.3]    # min max [rad/s]
             heading = [-3.14, 3.14]
 
     class rewards:
-        base_height_target = 0.89   
+        base_height_target = 0.89
         min_dist = 0.2
-        max_dist = 0.5 
+        max_dist = 0.5
         # put some settings here for LLM parameter tuning
         target_joint_pos_scale = 0.17    # rad
-        target_feet_height = 0.05       # m
+        target_feet_height = 0.06       # m
         cycle_time = 0.64                # sec
         # if true negative total rewards are clipped at zero (avoids early termination problems)
         only_positive_rewards = True
         # tracking reward = exp(error*sigma)
-        tracking_sigma = 5 
-        max_contact_force = 450  # forces above this value are penalized
-        
+        tracking_sigma = 5
+        max_contact_force = 700  # forces above this value are penalized
+
         class scales:
             # reference motion tracking
             joint_pos = 1.6
@@ -195,7 +193,7 @@ class XBotLCfg(LeggedRobotCfg):
             foot_slip = -0.05
             feet_distance = 0.2
             knee_distance = 0.2
-            # contact 
+            # contact
             feet_contact_forces = -0.01
             # vel tracking
             tracking_lin_vel = 1.2
@@ -214,7 +212,6 @@ class XBotLCfg(LeggedRobotCfg):
             dof_vel = -5e-4
             dof_acc = -1e-7
             collision = -1.
-
 
     class normalization:
         class obs_scales:

@@ -81,14 +81,6 @@ class XBotLFreeEnv(LeggedRobot):
         self.reset_idx(torch.tensor(range(self.num_envs), device=self.device))
         self.compute_observations()
 
-
-    def __init__(self, cfg: LeggedRobotCfg, sim_params, physics_engine, sim_device, headless):
-        super().__init__(cfg, sim_params, physics_engine, sim_device, headless)
-        self.last_feet_z = 0.05
-        self.feet_height = torch.zeros((self.num_envs, 2), device=self.device)
-        self.reset_idx(torch.tensor(range(self.num_envs), device=self.device))
-        self.compute_observations()
-
     def _push_robots(self):
         """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity. 
         """
@@ -121,6 +113,7 @@ class XBotLFreeEnv(LeggedRobot):
         stance_mask[:, 0] = sin_pos >= 0
         # right foot stance
         stance_mask[:, 1] = sin_pos < 0
+        # Double support phase
         stance_mask[torch.abs(sin_pos) < 0.1] = 1
 
         return stance_mask
@@ -134,18 +127,18 @@ class XBotLFreeEnv(LeggedRobot):
         self.ref_dof_pos = torch.zeros_like(self.dof_pos)
         scale_1 = self.cfg.rewards.target_joint_pos_scale
         scale_2 = 2 * scale_1
-        # left swing
+        # left foot stance phase set to default joint pos
         sin_pos_l[sin_pos_l > 0] = 0
         self.ref_dof_pos[:, 2] = sin_pos_l * scale_1
         self.ref_dof_pos[:, 3] = sin_pos_l * scale_2
         self.ref_dof_pos[:, 4] = sin_pos_l * scale_1
-        # right
+        # right foot stance phase set to default joint pos
         sin_pos_r[sin_pos_r < 0] = 0
         self.ref_dof_pos[:, 8] = sin_pos_r * scale_1
         self.ref_dof_pos[:, 9] = sin_pos_r * scale_2
         self.ref_dof_pos[:, 10] = sin_pos_r * scale_1
-
-        self.ref_dof_pos[torch.abs(sin_pos) < 0.1] = 0.
+        # Double support phase
+        self.ref_dof_pos[torch.abs(sin_pos) < 0.1] = 0
 
         self.ref_action = 2 * self.ref_dof_pos
 
@@ -197,8 +190,10 @@ class XBotLFreeEnv(LeggedRobot):
     def step(self, actions):
         if self.cfg.env.use_ref_actions:
             actions += self.ref_action
+        # dynamic randomization
         delay = torch.rand((self.num_envs, 1), device=self.device)
         actions = (1 - delay) * actions + delay * self.actions
+        actions += self.cfg.domain_rand.dynamic_randomization * torch.randn_like(actions) * actions
         return super().step(actions)
 
 
@@ -465,8 +460,8 @@ class XBotLFreeEnv(LeggedRobot):
         # Compute swing mask
         swing_mask = 1 - self._get_gait_phase()
 
-        # feet height should larger than target feet height at the peak
-        rew_pos = (self.feet_height > self.cfg.rewards.target_feet_height)
+        # feet height should be closed to target feet height at the peak
+        rew_pos = torch.abs(self.feet_height - self.cfg.rewards.target_feet_height) < 0.01
         rew_pos = torch.sum(rew_pos * swing_mask, dim=1)
         self.feet_height *= ~contact
         return rew_pos
