@@ -135,6 +135,9 @@ The base environment `legged_robot` constructs a rough terrain locomotion task. 
 3. If needed, create your environment in `<your_env>.py`. Inherit from existing environments, override desired functions and/or add your reward functions.
 4. Register your environment in `humanoid/envs/__init__.py`.
 5. Modify or tune other parameters in your `cfg` or `cfg_train` as per requirements. To remove the reward, set its scale to zero. Avoid modifying the parameters of other environments!
+6. If you want a new robot/environment to perform sim2sim, you may need to modify `humanoid/scripts/sim2sim.py`: 
+    - Check the joint mapping of the robot between MJCF and URDF.
+    - Change the initial joint position of the robot according to your trained policy.
 
 ## Troubleshooting
 
