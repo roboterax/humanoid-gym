@@ -1,5 +1,6 @@
 # Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer
 
+**[[Paper]](https://arxiv.org/abs/2404.05695)**
 **[[Project Page]](https://sites.google.com/view/humanoid-gym/)**
 
 ![Demo](./images/demo.gif)
@@ -173,11 +174,13 @@ mv ${YOUR_CONDA_ENV}/lib/libstdc++* ${YOUR_CONDA_ENV}/lib/_unused
 
 Please cite the following if you use this code or parts of it:
 ```
-@software{RobotEra2024Humanoid-Gym,
-  author = {RobotEra},
-  title = {{Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer}},
-  url = {https://github.com/roboterax/humanoid-gym},
-  year = {2024}
+@misc{gu2024humanoidgym,
+    title={Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer},
+    author={Xinyang Gu and Yen-Jen Wang and Jianyu Chen},
+    year={2024},
+    eprint={2404.05695},
+    archivePrefix={arXiv},
+    primaryClass={cs.RO}
 }
 ```
 
