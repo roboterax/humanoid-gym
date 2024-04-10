@@ -281,7 +281,7 @@ class XBotLFreeEnv(LeggedRobot):
 
     def _reward_feet_distance(self):
         """
-        Calculates the reward based on the distance between the feet. Penilize feet get close to each other or too far away.
+        Calculates the reward based on the distance between the feet. Penalize feet get close to each other or too far away.
         """
         foot_pos = self.rigid_state[:, self.feet_indices, :2]
         foot_dist = torch.norm(foot_pos[:, 0, :] - foot_pos[:, 1, :], dim=1)
