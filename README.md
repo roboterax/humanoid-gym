@@ -174,13 +174,11 @@ mv ${YOUR_CONDA_ENV}/lib/libstdc++* ${YOUR_CONDA_ENV}/lib/_unused
 
 Please cite the following if you use this code or parts of it:
 ```
-@misc{gu2024humanoidgym,
-    title={Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer},
-    author={Xinyang Gu and Yen-Jen Wang and Jianyu Chen},
-    year={2024},
-    eprint={2404.05695},
-    archivePrefix={arXiv},
-    primaryClass={cs.RO}
+@article{gu2024humanoid,
+  title={Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer},
+  author={Gu, Xinyang and Wang, Yen-Jen and Chen, Jianyu},
+  journal={arXiv preprint arXiv:2404.05695},
+  year={2024}
 }
 ```
 
