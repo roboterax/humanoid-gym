@@ -34,24 +34,31 @@ from .base_config import BaseConfig
 class LeggedRobotCfg(BaseConfig):
     class env:
         num_envs = 4096
-        num_observations = 235
-        num_privileged_obs = None # if not None a priviledge_obs_buf will be returned by step() (critic obs for assymetric training). None is returned otherwise 
+        #num_observations = 235
+        #num_privileged_obs = None # if not None a priviledge_obs_buf will be returned by step() (critic obs for assymetric training). None is returned otherwise 
         num_actions = 12
         env_spacing = 3.  # not used with heightfields/trimeshes 
         send_timeouts = True # send time out information to the algorithm
         episode_length_s = 20 # episode length in seconds
+
+
+    class safety:
+        # safety factors
+        pos_limit = 1.0
+        vel_limit = 1.0
+        torque_limit = 0.85
 
     class terrain:
         mesh_type = 'trimesh' # "heightfield" # none, plane, heightfield or trimesh
         horizontal_scale = 0.1 # [m]
         vertical_scale = 0.005 # [m]
         border_size = 25 # [m]
-        curriculum = True
+        curriculum = False
         static_friction = 1.0
         dynamic_friction = 1.0
         restitution = 0.
         # rough terrain only:
-        measure_heights = True
+        measure_heights = False
         measured_points_x = [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] # 1mx1.6m rectangle (without center line)
         measured_points_y = [-0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5]
         selected = False # select a unique terrain type and pass all arguments
@@ -59,10 +66,10 @@ class LeggedRobotCfg(BaseConfig):
         max_init_terrain_level = 5 # starting curriculum state
         terrain_length = 8.
         terrain_width = 8.
-        num_rows= 10 # number of terrain rows (levels)
+        num_rows= 20 # number of terrain rows (levels)
         num_cols = 20 # number of terrain cols (types)
         # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
-        terrain_proportions = [0.1, 0.1, 0.35, 0.25, 0.2]
+        terrain_proportions = [0.2, 0.2, 0.3, 0.1, 0.1, 0.05, 0.05]
         # trimesh only:
         slope_treshold = 0.75 # slopes above this threshold will be corrected to vertical surfaces
 
@@ -79,7 +86,7 @@ class LeggedRobotCfg(BaseConfig):
             heading = [-3.14, 3.14]
 
     class init_state:
-        pos = [0.0, 0.0, 1.] # x,y,z [m]
+        pos = [0.0, 0.0, 0.95] # x,y,z [m]
         rot = [0.0, 0.0, 0.0, 1.0] # x,y,z,w [quat]
         lin_vel = [0.0, 0.0, 0.0]  # x,y,z [m/s]
         ang_vel = [0.0, 0.0, 0.0]  # x,y,z [rad/s]
@@ -94,12 +101,12 @@ class LeggedRobotCfg(BaseConfig):
         # action scale: target angle = actionScale * action + defaultAngle
         action_scale = 0.5
         # decimation: Number of control action updates @ sim DT per policy DT
-        decimation = 4
+        decimation = 10 #100HZ
 
     class asset:
         file = ""
         name = "legged_robot"  # actor name
-        foot_name = "None" # name of the feet bodies, used to index body state and contact force tensors
+        #foot_name = "None" # name of the feet bodies, used to index body state and contact force tensors
         penalize_contacts_on = []
         terminate_after_contacts_on = []
         disable_gravity = False
@@ -118,38 +125,67 @@ class LeggedRobotCfg(BaseConfig):
         armature = 0.
         thickness = 0.01
 
+        foot_name = "ankle"
+        knee_name = "knee"
+
+        terminate_after_contacts_on = ['base_link']
+        penalize_contacts_on = ["base_link"]
+        fix_base_link = False
 
     class domain_rand:
         randomize_friction = True
-        friction_range = [0.5, 1.25]
-        randomize_base_mass = False
-        added_mass_range = [-1., 1.]
+        friction_range = [0.1, 2.0]
+        randomize_base_mass = True
+        added_mass_range = [-5., 5.]
         push_robots = True
-        push_interval_s = 15
-        max_push_vel_xy = 1.
-
+        push_interval_s = 4
+        max_push_vel_xy = 0.2
+        max_push_ang_vel = 0.4
+        dynamic_randomization = 0.02
 
     class rewards:
-        class scales:
-            termination = -0.0
-            tracking_lin_vel = 1.0
-            tracking_ang_vel = 0.5
-            lin_vel_z = -2.0
-            ang_vel_xy = -0.05
-            orientation = -0.
-            torques = -0.00001
-            dof_vel = -0.
-            dof_acc = -2.5e-7
-            base_height = -0. 
-            feet_air_time =  1.0
-            collision = -1.
-            feet_stumble = -0.0 
-            action_rate = -0.
-            stand_still = -0.
+        base_height_target = 0.89
+        min_dist = 0.2
+        max_dist = 0.5
+        # put some settings here for LLM parameter tuning
+        target_joint_pos_scale = 0.17    # rad
+        target_feet_height = 0.06       # m
+        cycle_time = 0.64                # sec
+        # if true negative total rewards are clipped at zero (avoids early termination problems)
+        only_positive_rewards = True
+        # tracking reward = exp(error*sigma)
+        tracking_sigma = 5
+        max_contact_force = 700  # forces above this value are penalized
 
-        only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
-        tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
-        max_contact_force = 100. # forces above this value are penalized
+        class scales:
+            # reference motion tracking
+            joint_pos = 1.6
+            feet_clearance = 1.
+            feet_contact_number = 1.2
+            # gait
+            feet_air_time = 1.
+            foot_slip = -0.05
+            feet_distance = 0.2
+            knee_distance = 0.2
+            # contact
+            feet_contact_forces = -0.01
+            # vel tracking
+            tracking_lin_vel = 1.2
+            tracking_ang_vel = 1.1
+            vel_mismatch_exp = 0.5  # lin_z; ang x,y
+            low_speed = 0.2
+            track_vel_hard = 0.5
+            # base pos
+            default_joint_pos = 0.5
+            orientation = 1.
+            base_height = 0.2
+            base_acc = 0.2
+            # energy
+            action_smoothness = -0.002
+            torques = -1e-5
+            dof_vel = -5e-4
+            dof_acc = -1e-7
+            collision = -1.
 
     class normalization:
         class obs_scales:
@@ -157,6 +193,7 @@ class LeggedRobotCfg(BaseConfig):
             ang_vel = 0.25
             dof_pos = 1.0
             dof_vel = 0.05
+            quat = 1.
             height_measurements = 5.0
         clip_observations = 100.
         clip_actions = 100.
@@ -170,6 +207,7 @@ class LeggedRobotCfg(BaseConfig):
             lin_vel = 0.1
             ang_vel = 0.2
             gravity = 0.05
+            quat = 0.03
             height_measurements = 0.1
 
     # viewer camera:
@@ -224,7 +262,7 @@ class LeggedRobotCfgPPO(BaseConfig):
         policy_class_name = 'ActorCritic'
         algorithm_class_name = 'PPO'
         num_steps_per_env = 24 # per iteration
-        max_iterations = 1500 # number of policy updates
+        max_iterations = 15000 # number of policy updates
 
         # logging
         save_interval = 100 # check for potential saves every this many iterations

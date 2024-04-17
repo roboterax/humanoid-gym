@@ -32,6 +32,7 @@
 
 from humanoid import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
 from .base.legged_robot import LeggedRobot
+from .h1.h1_config import H1RoughCfg, H1RoughCfgPPO
 
 from .custom.humanoid_config import XBotLCfg, XBotLCfgPPO
 from .custom.humanoid_env import XBotLFreeEnv
@@ -40,3 +41,5 @@ from humanoid.utils.task_registry import task_registry
 
 
 task_registry.register( "humanoid_ppo", XBotLFreeEnv, XBotLCfg(), XBotLCfgPPO() )
+task_registry.register( "h1", XBotLFreeEnv, H1RoughCfg(), H1RoughCfgPPO() )
+

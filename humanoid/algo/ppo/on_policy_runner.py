@@ -105,7 +105,10 @@ class OnPolicyRunner:
                 self.env.episode_length_buf, high=int(self.env.max_episode_length)
             )
         obs = self.env.get_observations()
+        #print('uiuiu')
+        #print(obs.shape)
         privileged_obs = self.env.get_privileged_observations()
+        #print(privileged_obs)
         critic_obs = privileged_obs if privileged_obs is not None else obs
         obs, critic_obs = obs.to(self.device), critic_obs.to(self.device)
         self.alg.actor_critic.train()  # switch to train mode (for dropout for example)

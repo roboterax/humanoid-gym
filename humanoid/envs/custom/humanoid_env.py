@@ -124,6 +124,8 @@ class XBotLFreeEnv(LeggedRobot):
         sin_pos = torch.sin(2 * torch.pi * phase)
         sin_pos_l = sin_pos.clone()
         sin_pos_r = sin_pos.clone()
+        #print('ww')
+        #print(self.dof_pos.shape)
         self.ref_dof_pos = torch.zeros_like(self.dof_pos)
         scale_1 = self.cfg.rewards.target_joint_pos_scale
         scale_2 = 2 * scale_1
@@ -134,9 +136,9 @@ class XBotLFreeEnv(LeggedRobot):
         self.ref_dof_pos[:, 4] = sin_pos_l * scale_1
         # right foot stance phase set to default joint pos
         sin_pos_r[sin_pos_r < 0] = 0
-        self.ref_dof_pos[:, 8] = sin_pos_r * scale_1
-        self.ref_dof_pos[:, 9] = sin_pos_r * scale_2
-        self.ref_dof_pos[:, 10] = sin_pos_r * scale_1
+        self.ref_dof_pos[:, 7] = sin_pos_r * scale_1
+        self.ref_dof_pos[:, 8] = sin_pos_r * scale_2
+        self.ref_dof_pos[:, 9] = sin_pos_r * scale_1
         # Double support phase
         self.ref_dof_pos[torch.abs(sin_pos) < 0.1] = 0
 
@@ -179,11 +181,11 @@ class XBotLFreeEnv(LeggedRobot):
         self.add_noise = self.cfg.noise.add_noise
         noise_scales = self.cfg.noise.noise_scales
         noise_vec[0: 5] = 0.  # commands
-        noise_vec[5: 17] = noise_scales.dof_pos * self.obs_scales.dof_pos
-        noise_vec[17: 29] = noise_scales.dof_vel * self.obs_scales.dof_vel
-        noise_vec[29: 41] = 0.  # previous actions
-        noise_vec[41: 44] = noise_scales.ang_vel * self.obs_scales.ang_vel   # ang vel
-        noise_vec[44: 47] = noise_scales.quat * self.obs_scales.quat         # euler x,y
+        noise_vec[5: 15] = noise_scales.dof_pos * self.obs_scales.dof_pos
+        noise_vec[15: 25] = noise_scales.dof_vel * self.obs_scales.dof_vel
+        noise_vec[25: 35] = 0.  # previous actions
+        noise_vec[35: 38] = noise_scales.ang_vel * self.obs_scales.ang_vel   # ang vel
+        noise_vec[38: 41] = noise_scales.quat * self.obs_scales.quat         # euler x,y
         return noise_vec
 
 
@@ -233,7 +235,8 @@ class XBotLFreeEnv(LeggedRobot):
             stance_mask,  # 2
             contact_mask,  # 2
         ), dim=-1)
-
+        #print('opopop')
+        #print(self.privileged_obs_buf.shape)
         obs_buf = torch.cat((
             self.command_input,  # 5 = 2D(sin cos) + 3D(vel_x, vel_y, aug_vel_yaw)
             q,    # 12D
@@ -245,14 +248,23 @@ class XBotLFreeEnv(LeggedRobot):
 
         if self.cfg.terrain.measure_heights:
             heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
-            self.privileged_obs_buf = torch.cat((self.obs_buf, heights), dim=-1)
+            self.privileged_obs_buf = torch.cat((self.privileged_obs_buf, heights), dim=-1)
+            #print(heights.shape)
+            #print(self.privileged_obs_buf.shape)
+
         
         if self.add_noise:  
             obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec * self.cfg.noise.noise_level
         else:
             obs_now = obs_buf.clone()
         self.obs_history.append(obs_now)
+
+        #print('iiiiii')
+        #for i in range(len(self.critic_history)):
+            #print(i)
+            #print(self.critic_history[i].shape)
         self.critic_history.append(self.privileged_obs_buf)
+        #print(self.privileged_obs_buf.shape)
 
 
         obs_buf_all = torch.stack([self.obs_history[i]
@@ -260,6 +272,11 @@ class XBotLFreeEnv(LeggedRobot):
 
         self.obs_buf = obs_buf_all.reshape(self.num_envs, -1)  # N, T*K
         self.privileged_obs_buf = torch.cat([self.critic_history[i] for i in range(self.cfg.env.c_frame_stack)], dim=1)
+        #print('wytyt')
+        #for i in range(len(self.critic_history)):
+            #print(i)
+            #print(self.critic_history[i].shape)
+        #print(self.privileged_obs_buf.shape)
 
     def reset_idx(self, env_ids):
         super().reset_idx(env_ids)
