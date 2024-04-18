@@ -2,6 +2,7 @@
 
 **[[Paper]](https://arxiv.org/abs/2404.05695)**
 **[[Project Page]](https://sites.google.com/view/humanoid-gym/)**
+**[[简体中文]](./README_CH.md)**
 
 ![Demo](./images/demo.gif)
 
