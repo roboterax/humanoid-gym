@@ -34,7 +34,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         single_num_privileged_obs = 65
         num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
         use_ref_actions = False
-      
+        episode_length_s = 60  # episode length in seconds
 
     class commands(LeggedRobotCfg.commands):
         # Vers: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
@@ -93,7 +93,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         foot_name = "ankle"
         penalize_contacts_on = ["hip", "knee"]
         terminate_after_contacts_on = ["pelvis"]
-        self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
+        self_collisions = 0 # 1 to disable, 0 to enable...bitwise filter
         flip_visual_attachments = False
   
     class rewards:
