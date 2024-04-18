@@ -101,14 +101,14 @@ class XBotLCfg(LeggedRobotCfg):
         pos = [0.0, 0.0, 0.95]
 
         default_joint_angles = {  # = target angles [rad] when action = 0.0
-            'left_leg_yaw_joint': -0.,
             'left_leg_roll_joint': -0.,
+            'left_leg_yaw_joint': -0.,
             'left_leg_pitch_joint': 0.,
             'left_knee_joint': 0.,
             'left_ankle_pitch_joint': 0.,
             'left_ankle_roll_joint': 0.,
-            'right_leg_yaw_joint': 0.,
             'right_leg_roll_joint': 0.,
+            'right_leg_yaw_joint': 0.,
             'right_leg_pitch_joint': -0.,
             'right_knee_joint': -0.,
             'right_ankle_pitch_joint': -0.,
