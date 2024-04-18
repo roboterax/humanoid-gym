@@ -45,9 +45,9 @@ Humanoid-Gym 是一个基于 Nvidia Isaac Gym 的易于使用的强化学习 (RL
 - `cd humanoid_gym && pip install -e .`
 
 ## 使用指南
-#### 例子
+#### 示例
 ```bash
-# 跨 4096 环境启动“v1”PPO 政策训练
+# 在4096环境中启动"v1"的PPO策略训练
 # 该命令启动基于 PPO 算法的人形任务训练
 python scripts/train.py --task=humanoid_ppo --run_name v1 --headless --num_envs 4096
 
