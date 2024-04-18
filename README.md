@@ -99,7 +99,7 @@ python scripts/sim2sim.py --load_model /path/to/logs/XBot_ppo/exported/policies/
 - By default, the latest model of the last run from the experiment folder is loaded. However, other run iterations/models can be selected by adjusting `load_run` and `checkpoint` in the training config.
 
 #### 3. Sim-to-sim
-
+- **Please note: Before initiating the sim-to-sim process, ensure that you run `play.py` to export a JIT policy.**
 - **Mujoco-based Sim2Sim Deployment**: Utilize Mujoco for executing simulation-to-simulation (sim2sim) deployments with the command below:
   ```
   python scripts/sim2sim.py --load_model /path/to/export/model.pt
@@ -188,4 +188,4 @@ The implementation of Humanoid-Gym relies on resources from [legged_gym](https:/
 
 ## Any Questions?
 
-If you have further questions, please feel free to contact [support@robotera.com](mailto:support@robotera.com).
+If you have further questions, please feel free to contact [support@robotera.com](mailto:support@robotera.com) or create an issue in this repository.
