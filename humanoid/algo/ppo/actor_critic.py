@@ -32,6 +32,7 @@
 import torch
 import torch.nn as nn
 from torch.distributions import Normal
+from humanoid.algo.models.decision_transformer import DecisionTransformer
 
 class ActorCritic(nn.Module):
     def __init__(self,  num_actor_obs,
@@ -41,6 +42,7 @@ class ActorCritic(nn.Module):
                         critic_hidden_dims=[256, 256, 256],
                         init_noise_std=1.0,
                         activation = nn.ELU(),
+                        architecture = 'T',
                         **kwargs):
         if kwargs:
             print("ActorCritic.__init__ got unexpected arguments, which will be ignored: " + str([key for key in kwargs.keys()]))
@@ -50,16 +52,19 @@ class ActorCritic(nn.Module):
         mlp_input_dim_a = num_actor_obs
         mlp_input_dim_c = num_critic_obs
         # Policy
-        actor_layers = []
-        actor_layers.append(nn.Linear(mlp_input_dim_a, actor_hidden_dims[0]))
-        actor_layers.append(activation)
-        for l in range(len(actor_hidden_dims)):
-            if l == len(actor_hidden_dims) - 1:
-                actor_layers.append(nn.Linear(actor_hidden_dims[l], num_actions))
-            else:
-                actor_layers.append(nn.Linear(actor_hidden_dims[l], actor_hidden_dims[l + 1]))
-                actor_layers.append(activation)
-        self.actor = nn.Sequential(*actor_layers)
+        if architecture = 'MLP':
+            actor_layers = []
+            actor_layers.append(nn.Linear(mlp_input_dim_a, actor_hidden_dims[0]))
+            actor_layers.append(activation)
+            for l in range(len(actor_hidden_dims)):
+                if l == len(actor_hidden_dims) - 1:
+                    actor_layers.append(nn.Linear(actor_hidden_dims[l], num_actions))
+                else:
+                    actor_layers.append(nn.Linear(actor_hidden_dims[l], actor_hidden_dims[l + 1]))
+                    actor_layers.append(activation)
+            self.actor = nn.Sequential(*actor_layers)
+        else:
+            self.actor = DecisionTransformer(mlp_input_dim_a, num_actions, hidden_size = 256)
 
         # Value function
         critic_layers = []
