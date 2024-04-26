@@ -33,6 +33,7 @@
 import os
 from typing import Tuple
 from datetime import datetime
+import json
 
 from humanoid.algo import VecEnv
 from humanoid.algo import OnPolicyRunner
@@ -145,6 +146,9 @@ class TaskRegistry():
             log_dir = os.path.join(log_root, datetime.now().strftime('%b%d_%H-%M-%S') + '_' + train_cfg.runner.run_name)
         
         train_cfg_dict = class_to_dict(train_cfg)
+        with open(log_dir+'train_cfg.json', 'w') as file:
+            json.dump(train_cfg_dict, file)
+
         env_cfg_dict = class_to_dict(self.env_cfg_for_wandb)
         all_cfg = {**train_cfg_dict, **env_cfg_dict}
         

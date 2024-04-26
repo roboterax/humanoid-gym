@@ -26,15 +26,18 @@ class H1RoughCfg( LeggedRobotCfg ):
         }
     
     class env(LeggedRobotCfg.env):
+        num_envs = 2000
         frame_stack = 15
         c_frame_stack = 3
-        num_single_obs = 41
+        num_single_obs = 42
         num_actions = 10
-        num_observations = int(frame_stack * num_single_obs)
+        num_observations = num_single_obs #int(frame_stack * num_single_obs)#num_single_obs#int(frame_stack * num_single_obs)
+        num_teaching_observations = int(frame_stack * (num_single_obs-1))
         single_num_privileged_obs = 65
         num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
         use_ref_actions = False
         episode_length_s = 60  # episode length in seconds
+      
 
     class commands(LeggedRobotCfg.commands):
         # Vers: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
@@ -44,9 +47,9 @@ class H1RoughCfg( LeggedRobotCfg ):
         curriculum = True
 
         class ranges:
-            lin_vel_x = [-2.0, 2.0]  # min max [m/s]
-            lin_vel_y = [-2.0, 2.0]   # min max [m/s]
-            ang_vel_yaw = [-0.3, 0.3]    # min max [rad/s]
+            lin_vel_x = [-1.0, 2.0]  # min max [m/s]
+            lin_vel_y = [-1.0, 1.0]   # min max [m/s]
+            ang_vel_yaw = [-1.0, 1,0]    # min max [rad/s]
             heading = [-3.14, 3.14]
 
     class domain_rand:
@@ -118,8 +121,8 @@ class H1RoughCfg( LeggedRobotCfg ):
             # gait
             feet_air_time = 1.
             foot_slip = -0.05
-            feet_distance = 0.2
-            knee_distance = 0.2
+            feet_distance = 2
+            knee_distance = 2
             # contact
             feet_contact_forces = -0.01
             # vel tracking
@@ -141,6 +144,8 @@ class H1RoughCfg( LeggedRobotCfg ):
             collision = -1.
 
 class H1RoughCfgPPO( LeggedRobotCfgPPO ):
+    class policy( LeggedRobotCfgPPO.policy ):
+        teaching_model_path = '/home/ps/humanoid-gym/logs/h1/MLP_best/model_15000.pt'
     class algorithm( LeggedRobotCfgPPO.algorithm ):
         entropy_coef = 0.01
     class runner( LeggedRobotCfgPPO.runner ):

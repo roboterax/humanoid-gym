@@ -100,7 +100,8 @@ class XBotLFreeEnv(LeggedRobot):
 
     def  _get_phase(self):
         cycle_time = self.cfg.rewards.cycle_time
-        phase = self.episode_length_buf * self.dt / cycle_time
+        time_scale = 1#torch.sqrt(self.commands[:,0]**2 + self.commands[:,1]**2) 
+        phase = self.episode_length_buf * self.dt * time_scale / cycle_time
         return phase
 
     def _get_gait_phase(self):
@@ -235,13 +236,12 @@ class XBotLFreeEnv(LeggedRobot):
             stance_mask,  # 2
             contact_mask,  # 2
         ), dim=-1)
-        #print('opopop')
-        #print(self.privileged_obs_buf.shape)
+
         obs_buf = torch.cat((
-            self.command_input,  # 5 = 2D(sin cos) + 3D(vel_x, vel_y, aug_vel_yaw)
+            self.command_input,  # 5 = 2D(sin cos) + 3D(vel_x, vel_y, aug_vel_yaw), # 12D
             q,    # 12D
-            dq,  # 12D
-            self.actions,   # 12D
+            dq,  # 12D   
+            self.actions,
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
         ), dim=-1)
@@ -249,34 +249,21 @@ class XBotLFreeEnv(LeggedRobot):
         if self.cfg.terrain.measure_heights:
             heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
             self.privileged_obs_buf = torch.cat((self.privileged_obs_buf, heights), dim=-1)
-            #print(heights.shape)
-            #print(self.privileged_obs_buf.shape)
-
         
         if self.add_noise:  
-            obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec * self.cfg.noise.noise_level
+            obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[1:] * self.cfg.noise.noise_level
         else:
             obs_now = obs_buf.clone()
+        obs_now = torch.cat((phase[:, None], obs_now.clone()), dim=-1)
         self.obs_history.append(obs_now)
 
-        #print('iiiiii')
-        #for i in range(len(self.critic_history)):
-            #print(i)
-            #print(self.critic_history[i].shape)
         self.critic_history.append(self.privileged_obs_buf)
-        #print(self.privileged_obs_buf.shape)
-
 
         obs_buf_all = torch.stack([self.obs_history[i]
                                    for i in range(self.obs_history.maxlen)], dim=1)  # N,T,K
 
         self.obs_buf = obs_buf_all.reshape(self.num_envs, -1)  # N, T*K
         self.privileged_obs_buf = torch.cat([self.critic_history[i] for i in range(self.cfg.env.c_frame_stack)], dim=1)
-        #print('wytyt')
-        #for i in range(len(self.critic_history)):
-            #print(i)
-            #print(self.critic_history[i].shape)
-        #print(self.privileged_obs_buf.shape)
 
     def reset_idx(self, env_ids):
         super().reset_idx(env_ids)
