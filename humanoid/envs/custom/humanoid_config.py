@@ -115,6 +115,10 @@ class XBotLCfg(LeggedRobotCfg):
             'right_ankle_roll_joint': 0.,
         }
 
+
+import torch
+import torch.nn.functional as F
+
     class control(LeggedRobotCfg.control):
         # PD Drive parameters:
         stiffness = {'leg_roll': 200.0, 'leg_pitch': 350.0, 'leg_yaw': 200.0,
