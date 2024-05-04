@@ -2,6 +2,7 @@
 
 **[[Paper]](https://arxiv.org/abs/2404.05695)**
 **[[Project Page]](https://sites.google.com/view/humanoid-gym/)**
+**[[简体中文]](./README_CH.md)**
 
 This repository contains the code for our paper [Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer](https://arxiv.org/abs/2404.05695) by [Xinyang Gu*](https://github.com/zlw21gxy), [Yen-Jen Wang*](https://wangyenjen.github.io/), and [Jianyu Chen](http://people.iiis.tsinghua.edu.cn/~jychen/).
 
