@@ -57,7 +57,10 @@ class BaseTask():
             self.device = 'cpu'
 
         # graphics device for rendering, -1 for no rendering
-        self.graphics_device_id = self.sim_device_id
+        if self.headless:
+            self.graphics_device_id = -1
+        else:
+            self.graphics_device_id = self.sim_device_id
 
         self.num_envs = cfg.env.num_envs
         self.num_obs = cfg.env.num_observations
