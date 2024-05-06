@@ -38,6 +38,7 @@ from collections import deque
 from datetime import datetime
 from .ppo import PPO
 from .actor_critic import ActorCritic, Teaching_ActorCritic
+from .actor_critic_recurrent import ActorCriticRecurrent
 from humanoid.algo.vec_env import VecEnv
 from torch.utils.tensorboard import SummaryWriter
 
@@ -64,7 +65,7 @@ class OnPolicyRunner:
         else:
             num_critic_obs = self.env.num_obs
         actor_critic_class = eval(self.cfg["policy_class_name"])  # ActorCritic
-        actor_critic: ActorCritic = actor_critic_class(
+        actor_critic: ActorCritic | ActorCriticRecurrent = actor_critic_class(
             self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
         ).to(self.device)
         if self.policy_cfg["architecture"] == 'Mix':
@@ -72,6 +73,8 @@ class OnPolicyRunner:
             print('Loading Pretrained Teaching Model')
             teaching_actorCritic.load_state_dict(torch.load(self.policy_cfg["teaching_model_path"])["model_state_dict"])
             print('Pretrained Teaching Model Loaded')
+        else:
+            teaching_actorCritic = None
 
         alg_class = eval(self.cfg["algorithm_class_name"])  # PPO
         self.alg: PPO = alg_class(actor_critic, teaching_actorCritic, device=self.device, **self.alg_cfg)

@@ -26,8 +26,8 @@ class H1RoughCfg( LeggedRobotCfg ):
         }
     
     class env(LeggedRobotCfg.env):
-        num_envs = 2000
-        frame_stack = 15
+        num_envs = 4000
+        frame_stack = 1
         c_frame_stack = 3
         num_single_obs = 42
         num_actions = 10
@@ -143,38 +143,18 @@ class H1RoughCfg( LeggedRobotCfg ):
             dof_acc = -1e-7
             collision = -1.
 
-        class stand_scales:
-            # gait
-            feet_air_time = -10.
-            foot_slip = 0
-            feet_distance = 2
-            knee_distance = 2
-            # contact
-            feet_contact_forces = -0.01 * 0
-            # vel tracking
-            tracking_lin_vel = 1.2 * 10
-            tracking_ang_vel = 1.1 * 10
-            vel_mismatch_exp = 0.5  # lin_z; ang x,y
-            track_vel_hard = 0.5 * 10
-            # base pos
-            default_joint_pos = 0.5
-            orientation = 1.
-            base_height = 0.2 * 10
-            base_acc = 0.2 * 10
-            # energy
-            action_smoothness = -0.002
-            torques = -1e-5
-            dof_vel = -5e-4
-            dof_acc = -1e-7
-            collision = -1.
-
 class H1RoughCfgPPO( LeggedRobotCfgPPO ):
     class policy( LeggedRobotCfgPPO.policy ):
         teaching_model_path = '/home/ps/humanoid-gym/logs/h1/MLP_best/model_15000.pt'
+        # For LSTM only
+        rnn_type = 'lstm'
+        rnn_hidden_size = 512
+        rnn_num_layers = 1
     class algorithm( LeggedRobotCfgPPO.algorithm ):
         entropy_coef = 0.01
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
         experiment_name = 'h1'
+        policy_class_name = 'ActorCriticRecurrent'
 
   

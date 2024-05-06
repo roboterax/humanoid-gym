@@ -41,18 +41,20 @@ class ActorCritic(nn.Module):
                         actor_hidden_dims=[256, 256, 256],
                         critic_hidden_dims=[256, 256, 256],
                         init_noise_std=1.0,
-                        architecture='Mix',
-                        activation = nn.ELU(),
+                        architecture='MLP',
+                        activation = 'elu',
                         **kwargs):
         if kwargs:
             print("ActorCritic.__init__ got unexpected arguments, which will be ignored: " + str([key for key in kwargs.keys()]))
         super(ActorCritic, self).__init__()
         print(kwargs.keys())
 
-
+        activation = get_activation(activation)
         mlp_input_dim_a = num_actor_obs
         mlp_input_dim_c = num_critic_obs
         # Police
+        print('werrere')
+        print(architecture)
         if architecture == 'Trans' or architecture == 'Mix':
             self.actor = DecisionTransformer(mlp_input_dim_a, num_actions, hidden_size = 192)
         else:
@@ -79,6 +81,7 @@ class ActorCritic(nn.Module):
             else:
                 critic_layers.append(nn.Linear(critic_hidden_dims[l], critic_hidden_dims[l + 1]))
                 critic_layers.append(activation)
+        print(critic_layers)
         self.critic = nn.Sequential(*critic_layers)
 
         print(f"Actor T: {self.actor}")
@@ -137,7 +140,24 @@ class ActorCritic(nn.Module):
         value = self.critic(critic_observations)
         return value
 
-
+def get_activation(act_name):
+    if act_name == "elu":
+        return nn.ELU()
+    elif act_name == "selu":
+        return nn.SELU()
+    elif act_name == "relu":
+        return nn.ReLU()
+    elif act_name == "crelu":
+        return nn.CReLU()
+    elif act_name == "lrelu":
+        return nn.LeakyReLU()
+    elif act_name == "tanh":
+        return nn.Tanh()
+    elif act_name == "sigmoid":
+        return nn.Sigmoid()
+    else:
+        print("invalid activation function!")
+        return None
 
 class Teaching_ActorCritic(nn.Module):
     def __init__(self,  num_actor_obs,

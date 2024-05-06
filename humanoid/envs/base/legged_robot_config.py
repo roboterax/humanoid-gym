@@ -239,7 +239,7 @@ class LeggedRobotCfgPPO(BaseConfig):
     seed = 1
     runner_class_name = 'OnPolicyRunner'
     class policy:
-        architecture = 'Mix'
+        architecture = 'LSTM'
         teaching_model_path = ''
         init_noise_std = 1.0
         actor_hidden_dims = [512, 256, 128]
@@ -252,7 +252,7 @@ class LeggedRobotCfgPPO(BaseConfig):
         use_imitation_loss = True
         clip_param = 0.2
         entropy_coef = 0.01
-        imitation_coef = 1.0
+        imitation_coef = 100.0
         num_learning_epochs = 5
         num_mini_batches = 4 # mini batch size = num_envs*nsteps / nminibatches
         learning_rate = 1.e-3 #5.e-4

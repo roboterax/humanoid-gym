@@ -101,6 +101,8 @@ class PPO:
         # Compute the actions and values
         #print('ww')
         #print(obs.shape)
+        # For RNN
+        self.transition.hidden_states = self.actor_critic.get_hidden_states()
         self.transition.actions = self.actor_critic.act(obs).detach()
         #print(critic_obs.shape)
         self.transition.values = self.actor_critic.evaluate(critic_obs).detach()
@@ -133,13 +135,11 @@ class PPO:
         mean_surrogate_loss = 0
         mean_imitation_loss = 0
 
-        generator = self.storage.mini_batch_generator(self.num_mini_batches, self.num_learning_epochs)
+        generator = self.storage.reccurent_mini_batch_generator(self.num_mini_batches, self.num_learning_epochs)
         for obs_batch, critic_obs_batch, actions_batch, target_values_batch, advantages_batch, returns_batch, old_actions_log_prob_batch, \
             old_mu_batch, old_sigma_batch, hid_states_batch, masks_batch in generator:
 
-
                 self.actor_critic.act(obs_batch, masks=masks_batch, hidden_states=hid_states_batch[0])
-                self.teaching_actor_critic.act(obs_batch, masks=masks_batch, hidden_states=hid_states_batch[0])
                 actions_log_prob_batch = self.actor_critic.get_actions_log_prob(actions_batch)
                 #teaching_actions_log_prob_batch = self.actor_critic.get_actions_log_prob()
                 value_batch = self.actor_critic.evaluate(critic_obs_batch, masks=masks_batch, hidden_states=hid_states_batch[1])
@@ -181,11 +181,15 @@ class PPO:
                     value_loss = (returns_batch - value_batch).pow(2).mean()
 
                 # Imitation Loss
-                teaching_distribution = self.teaching_actor_critic.distribution
-                distribution = self.actor_critic.distribution
-                teaching_stddev = teaching_distribution.stddev.detach().clone()
-                teaching_mean = teaching_distribution.mean.detach().clone()
-                imitation_loss = torch.mean(torch.log(teaching_stddev/distribution.stddev) + (distribution.stddev**2 + (distribution.mean - teaching_mean)**2) / (2*teaching_stddev**2) - 0.5)  
+                if self.teaching_actor_critic != None:
+                    self.teaching_actor_critic.act(obs_batch, masks=masks_batch, hidden_states=hid_states_batch[0])
+                    teaching_distribution = self.teaching_actor_critic.distribution
+                    distribution = self.actor_critic.distribution
+                    teaching_stddev = teaching_distribution.stddev.detach().clone()
+                    teaching_mean = teaching_distribution.mean.detach().clone()
+                    imitation_loss = torch.mean(torch.log(teaching_stddev/distribution.stddev) + (distribution.stddev**2 + (distribution.mean - teaching_mean)**2) / (2*teaching_stddev**2) - 0.5)  
+                else:
+                    imitation_loss = torch.tensor(0)
 
                 loss = surrogate_loss + self.value_loss_coef * value_loss - self.entropy_coef * entropy_batch.mean() + self.imitation_coef * imitation_loss
 
