@@ -219,11 +219,14 @@ class LeggedRobot(BaseTask):
             Calls each reward function which had a non-zero scale (processed in self._prepare_reward_function())
             adds each terms to the episode sums and to the total reward
         """
-        self.rew_buf[:] = 0.
+        self.rew_buf[:] = 0. 
 
         for i in range(len(self.reward_functions)):
             name = self.reward_names[i]
-            rew = self.reward_functions[i]() * self.reward_scales[name]
+            rew = self.reward_functions[i]() 
+
+            rew[self.moving_idx] = rew[self.moving_idx] * self.reward_scales[name]
+            rew[self.standing_idx] = rew[self.standing_idx] * self.standing_reward_scales[name]
             self.rew_buf += rew
             self.episode_sums[name] += rew
         if self.cfg.rewards.only_positive_rewards:
@@ -332,6 +335,11 @@ class LeggedRobot(BaseTask):
 
         # set small commands to zero
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
+
+        absolute_vel_commands =  torch.sqrt(self.commands[:,0]**2 + self.commands[:,1]**2)
+
+        self.moving_idx = torch.nonzero(torch.gt(absolute_vel_commands, 0)).squeeze()
+        self.standing_idx = torch.nonzero(torch.eq(absolute_vel_commands, 0)).squeeze()
 
 
 
@@ -518,12 +526,23 @@ class LeggedRobot(BaseTask):
             Looks for self._reward_<REWARD_NAME>, where <REWARD_NAME> are names of all non zero reward scales in the cfg.
         """
         # remove zero scales + multiply non-zero ones by dt
+        #for key in list(self.reward_scales.keys()):
+        #    scale = self.reward_scales[key]
+            #if scale==0:
+            #    self.reward_scales.pop(key) 
+            #else:
+            #self.reward_scales[key] *= self.dt
+
         for key in list(self.reward_scales.keys()):
-            scale = self.reward_scales[key]
-            if scale==0:
-                self.reward_scales.pop(key) 
-            else:
-                self.reward_scales[key] *= self.dt
+            if key not in standing_reward_scales:
+                standing_reward_scales[key] = 0
+            #scale = self.standing_reward_scales[key]
+            #if scale==0:
+            #    self.standing_reward_scales.pop(key) 
+            #else:
+            self.reward_scales[key] *= self.dt
+            self.standing_reward_scales[key] *= self.dt
+
         # prepare list of functions
         self.reward_functions = []
         self.reward_names = []
@@ -710,6 +729,7 @@ class LeggedRobot(BaseTask):
         self.dt = self.cfg.control.decimation * self.sim_params.dt
         self.obs_scales = self.cfg.normalization.obs_scales
         self.reward_scales = class_to_dict(self.cfg.rewards.scales)
+        self.standing_reward_scales = class_to_dict(self.cfg.rewards.stand_scales)
         self.command_ranges = class_to_dict(self.cfg.commands.ranges)
         if self.cfg.terrain.mesh_type not in ['heightfield', 'trimesh']:
             self.cfg.terrain.curriculum = False

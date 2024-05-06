@@ -53,8 +53,6 @@ class ActorCritic(nn.Module):
         mlp_input_dim_a = num_actor_obs
         mlp_input_dim_c = num_critic_obs
         # Police
-        print('werrere')
-        print(architecture)
         if architecture == 'Trans' or architecture == 'Mix':
             self.actor = DecisionTransformer(mlp_input_dim_a, num_actions, hidden_size = 192)
         else:
@@ -205,7 +203,7 @@ class Teaching_ActorCritic(nn.Module):
                 critic_layers.append(activation)
         self.critic = nn.Sequential(*critic_layers)
 
-        print(f"Actor T: {self.actor}")
+        print(f"Actor MLP: {self.actor}")
         print(f"Critic MLP: {self.critic}")
 
         # Action noise
