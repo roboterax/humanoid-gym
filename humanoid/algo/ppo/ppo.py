@@ -99,12 +99,9 @@ class PPO:
 
     def act(self, obs, critic_obs):
         # Compute the actions and values
-        #print('ww')
-        #print(obs.shape)
         # For RNN
         self.transition.hidden_states = self.actor_critic.get_hidden_states()
         self.transition.actions = self.actor_critic.act(obs).detach()
-        #print(critic_obs.shape)
         self.transition.values = self.actor_critic.evaluate(critic_obs).detach()
         self.transition.actions_log_prob = self.actor_critic.get_actions_log_prob(self.transition.actions).detach()
         self.transition.action_mean = self.actor_critic.action_mean.detach()

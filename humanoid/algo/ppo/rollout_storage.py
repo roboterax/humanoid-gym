@@ -24,6 +24,8 @@ class RolloutStorage:
         self.obs_shape = obs_shape
         self.privileged_obs_shape = privileged_obs_shape
         self.actions_shape = actions_shape
+        print('wwrrer')
+        print(self.obs_shape)
 
         # Core
         self.observations = torch.zeros(num_transitions_per_env, num_envs, *obs_shape, device=self.device)

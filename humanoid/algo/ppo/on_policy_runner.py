@@ -82,13 +82,22 @@ class OnPolicyRunner:
         self.save_interval = self.cfg["save_interval"]
 
         # init storage and model
-        self.alg.init_storage(
-            self.env.num_envs,
-            self.num_steps_per_env,
-            [int(self.env.num_obs * self.env.frame_stack)],
-            [self.env.num_privileged_obs],
-            [self.env.num_actions],
-        )
+        if self.policy_cfg['architecture'] == 'Mix' or self.policy_cfg['architecture'] == 'Trans':
+            self.alg.init_storage(
+                self.env.num_envs,
+                self.num_steps_per_env,
+                [int(self.env.num_obs) * self.env.frame_stack],
+                [self.env.num_privileged_obs],
+                [self.env.num_actions],
+            )
+        else: 
+            self.alg.init_storage(
+                self.env.num_envs,
+                self.num_steps_per_env,
+                [int(self.env.num_obs)],
+                [self.env.num_privileged_obs],
+                [self.env.num_actions],
+            )
 
         # Log
         self.log_dir = log_dir

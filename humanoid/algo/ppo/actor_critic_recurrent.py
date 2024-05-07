@@ -58,16 +58,8 @@ class ActorCriticRecurrent(ActorCritic):
         self.memory_c.reset(dones)
 
     def act(self, observations, masks=None, hidden_states=None):
-        #print(observations.shape)
-        #print(hidden_states.shape)
-        #print(masks.shape)
-        #print('wwwwwwwwww')
-        #num_batch = observations.shape[0]
-        #observations_tmp = observations.contiguous().view(-1, num_batch, self.num_actor_obs)
-        #print(observations_tmp.shape)
+
         input_a = self.memory_a(observations, masks, hidden_states)
-        #print(input_a.squeeze(0).shape)
-        #print('eeeeeeee')
         return super().act(input_a.squeeze(0))
 
     def act_inference(self, observations):
@@ -103,7 +95,7 @@ class Memory(torch.nn.Module):
             if len(input.shape) < 3:
                 input =  input.unsqueeze(0)
             out, self.hidden_states = self.rnn(input, self.hidden_states)
-        return out[-1,:,:]
+        return out#[-1,:,:]
 
     def reset(self, dones=None):
         # When the RNN is an LSTM, self.hidden_states_a is a list with hidden_state and cell_state
