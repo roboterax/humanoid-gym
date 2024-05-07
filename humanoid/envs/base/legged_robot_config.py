@@ -79,6 +79,7 @@ class LeggedRobotCfg(BaseConfig):
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 10. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
+        standing_command = False
         class ranges:
             lin_vel_x = [-1.0, 1.0] # min max [m/s]
             lin_vel_y = [-1.0, 1.0]   # min max [m/s]
@@ -239,7 +240,7 @@ class LeggedRobotCfgPPO(BaseConfig):
     seed = 1
     runner_class_name = 'OnPolicyRunner'
     class policy:
-        architecture = 'LSTM'
+        architecture = 'RNN' # choose from 'Mix', 'Trans', 'MLP', and 'RNN'
         teaching_model_path = ''
         init_noise_std = 1.0
         actor_hidden_dims = [512, 256, 128]

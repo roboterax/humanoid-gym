@@ -26,7 +26,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         }
     
     class env(LeggedRobotCfg.env):
-        num_envs = 4000
+        num_envs = 3000
         frame_stack = 15
         c_frame_stack = 3
         num_single_obs = 42
@@ -153,9 +153,9 @@ class H1RoughCfg( LeggedRobotCfg ):
             feet_contact_forces = -0.01 * 0
             # vel tracking
             tracking_lin_vel = 1.2 * 10
-            tracking_ang_vel = 1.1 * 10
+            tracking_ang_vel = 1.1 * 0
             vel_mismatch_exp = 0.5  # lin_z; ang x,y
-            track_vel_hard = 0.5 * 10
+            track_vel_hard = 0.5 * 0
             # base pos
             default_joint_pos = 0.5
             orientation = 1.
@@ -180,6 +180,6 @@ class H1RoughCfgPPO( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
         experiment_name = 'h1'
-        policy_class_name = 'ActorCriticRecurrent'
+        policy_class_name = 'ActorCritic'
 
   

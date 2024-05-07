@@ -64,10 +64,17 @@ class OnPolicyRunner:
             num_critic_obs = self.env.num_privileged_obs
         else:
             num_critic_obs = self.env.num_obs
-        actor_critic_class = eval(self.cfg["policy_class_name"])  # ActorCritic
-        actor_critic: ActorCritic | ActorCriticRecurrent = actor_critic_class(
-            self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
-        ).to(self.device)
+        if self.policy_cfg["architecture"] == 'RNN':
+            actor_critic_class = eval('ActorCriticRecurrent')  # ActorCritic
+            actor_critic: ActorCriticRecurrent = actor_critic_class(
+                self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
+            ).to(self.device)
+        else:
+            actor_critic_class = eval('ActorCritic')  # ActorCritic
+            actor_critic: ActorCritic = actor_critic_class(
+                self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
+            ).to(self.device)
+
         if self.policy_cfg["architecture"] == 'Mix':
             teaching_actorCritic = Teaching_ActorCritic(self.env.num_obs, self.env.num_teaching_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg)
             print('Loading Pretrained Teaching Model')

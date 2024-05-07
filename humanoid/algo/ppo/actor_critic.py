@@ -35,6 +35,8 @@ from torch.distributions import Normal
 from humanoid.algo.models.decision_transformer import DecisionTransformer
 
 class ActorCritic(nn.Module):
+    is_recurrent = False
+    
     def __init__(self,  num_actor_obs,
                         num_critic_obs,
                         num_actions,

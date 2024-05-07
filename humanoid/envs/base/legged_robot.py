@@ -36,6 +36,7 @@ import numpy as np
 from isaacgym.torch_utils import *
 from isaacgym import gymtorch, gymapi, gymutil
 from collections import deque
+import random
 
 import torch
 
@@ -326,8 +327,13 @@ class LeggedRobot(BaseTask):
         Args:
             env_ids (List[int]): Environments ids for which new commands are needed
         """
-        self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
-        self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+        if random.random() < 0.3 and self.cfg.commands.standing_command:
+            self.commands[env_ids, 0] = 0
+            self.commands[env_ids, 1] = 0
+        else:
+            self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+            self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
+        
         if self.cfg.commands.heading_command:
             self.commands[env_ids, 3] = torch_rand_float(self.command_ranges["heading"][0], self.command_ranges["heading"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         else:
@@ -340,6 +346,10 @@ class LeggedRobot(BaseTask):
 
         self.moving_idx = torch.nonzero(torch.gt(absolute_vel_commands, 0)).squeeze()
         self.standing_idx = torch.nonzero(torch.eq(absolute_vel_commands, 0)).squeeze()
+        # print('standing_idx')
+        # print(self.standing_idx)
+        # print('moving_idx')
+        # print(self.moving_idx)
 
 
 
@@ -534,14 +544,17 @@ class LeggedRobot(BaseTask):
             #self.reward_scales[key] *= self.dt
 
         for key in list(self.reward_scales.keys()):
-            if key not in standing_reward_scales:
-                standing_reward_scales[key] = 0
+            if key not in self.standing_reward_scales:
+                self.standing_reward_scales[key] = 0
             #scale = self.standing_reward_scales[key]
             #if scale==0:
             #    self.standing_reward_scales.pop(key) 
             #else:
             self.reward_scales[key] *= self.dt
             self.standing_reward_scales[key] *= self.dt
+
+        #print(self.standing_reward_scales)
+        #print(self.reward_scales)
 
         # prepare list of functions
         self.reward_functions = []
