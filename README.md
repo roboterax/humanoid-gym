@@ -51,7 +51,7 @@ Denoising World Model Learning(DWL) presents an advanced sim-to-real framework t
    - Consult `isaacgym/docs/index.html` for troubleshooting.
 6. Install humanoid-gym:
    - Clone this repository.
-   - `cd humanoid_gym && pip install -e .`
+   - `cd humanoid-gym && pip install -e .`
 
 
 
