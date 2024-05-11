@@ -225,9 +225,9 @@ class LeggedRobot(BaseTask):
         for i in range(len(self.reward_functions)):
             name = self.reward_names[i]
             rew = self.reward_functions[i]() 
-
-            rew[self.moving_idx] = rew[self.moving_idx] * self.reward_scales[name]
-            rew[self.standing_idx] = rew[self.standing_idx] * self.standing_reward_scales[name]
+            rew = rew * self.standing_reward_scales[name]
+            #rew[self.moving_idx] = rew[self.moving_idx] * self.reward_scales[name]
+            #rew[self.standing_idx] = rew[self.standing_idx] * self.standing_reward_scales[name]
             self.rew_buf += rew
             self.episode_sums[name] += rew
         if self.cfg.rewards.only_positive_rewards:
@@ -327,7 +327,7 @@ class LeggedRobot(BaseTask):
         Args:
             env_ids (List[int]): Environments ids for which new commands are needed
         """
-        if random.random() < 0.3 and self.cfg.commands.standing_command:
+        if random.random() < 11:# and self.cfg.commands.standing_command:
             self.commands[env_ids, 0] = 0
             self.commands[env_ids, 1] = 0
         else:

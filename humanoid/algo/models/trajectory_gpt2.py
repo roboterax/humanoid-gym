@@ -128,7 +128,9 @@ class Attention(nn.Module):
             "bias", torch.tril(torch.ones((n_ctx, n_ctx), dtype=torch.uint8)).view(1, 1, n_ctx, n_ctx)
         )
         self.register_buffer("masked_bias", torch.tensor(-1e4))
-        self.n_head = config.n_head
+        self.n_head = 4 #config.n_head
+        #print(self.n_head)
+        #print('wdsasdasd')
         self.split_size = n_state
         self.scale = scale
         self.is_cross_attention = is_cross_attention
@@ -520,7 +522,7 @@ class GPT2Model(GPT2PreTrainedModel):
         self.wte = nn.Embedding(config.vocab_size, config.n_embd)
         # self.wpe = nn.Embedding(config.n_positions, config.n_embd)
         self.drop = nn.Dropout(config.embd_pdrop)
-        self.h = nn.ModuleList([Block(config.n_ctx, config, scale=True)]) #for _ in range(config.n_layer-10)])
+        self.h = nn.ModuleList([Block(config.n_ctx, config, scale=True) for _ in range(config.n_layer-10)])
         self.ln_f = nn.LayerNorm(config.n_embd, eps=config.layer_norm_epsilon)
 
         self.init_weights()

@@ -40,6 +40,7 @@ class DecisionTransformer(TrajectoryModel):
         self.transformer = GPT2Model(config)
         self.obs_dim, self.act_dim = H1RoughCfg.env.num_observations, H1RoughCfg.env.num_actions
 
+        #hidden_size = 512
         self.embed_timestep = nn.Embedding(max_ep_len, hidden_size)
         self.embed_return = torch.nn.Linear(1, hidden_size)
         self.embed_state = torch.nn.Linear(self.obs_dim, hidden_size)

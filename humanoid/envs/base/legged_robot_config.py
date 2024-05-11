@@ -240,7 +240,7 @@ class LeggedRobotCfgPPO(BaseConfig):
     seed = 1
     runner_class_name = 'OnPolicyRunner'
     class policy:
-        architecture = 'RNN' # choose from 'Mix', 'Trans', 'MLP', and 'RNN'
+        architecture = 'MLP' # choose from 'Mix', 'Trans', 'MLP', and 'RNN'
         teaching_model_path = ''
         init_noise_std = 1.0
         actor_hidden_dims = [512, 256, 128]
