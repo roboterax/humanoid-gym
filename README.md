@@ -2,7 +2,7 @@
 
 <a href="https://sites.google.com/view/humanoid-gym/"><strong>Project Page</strong></a>
   |
-  <a href="[https://arxiv.org/abs/2403.03954](https://arxiv.org/abs/2404.05695)"><strong>arXiv</strong></a>
+  <a href="https://arxiv.org/abs/2404.05695"><strong>arXiv</strong></a>
   |
   <a href="https://twitter.com/roboterax/status/1765038672641175662"><strong>Twitter</strong></a>
 
