@@ -51,6 +51,8 @@ class PPO:
                  entropy_coef=0.0,
                  imitation_coef = 0.02,
                  learning_rate=1e-3,
+                 max_learning_rate=7e-5,
+                 min_learning_rate=1e-2,
                  max_grad_norm=1.0,
                  use_clipped_value_loss=True,
                  use_imitation_loss = True,
@@ -64,6 +66,8 @@ class PPO:
         self.desired_kl = desired_kl
         self.schedule = schedule
         self.learning_rate = learning_rate
+        self.max_learning_rate = max_learning_rate
+        self.min_learning_rate = min_learning_rate
 
         # PPO components
         self.actor_critic = actor_critic
@@ -157,9 +161,9 @@ class PPO:
                         kl_mean = torch.mean(kl)
 
                         if kl_mean > self.desired_kl * 2.0:
-                            self.learning_rate = max(1e-4, self.learning_rate / 1.5)
+                            self.learning_rate = max(self.min_learning_rate, self.learning_rate / 1.5)
                         elif kl_mean < self.desired_kl / 2.0 and kl_mean > 0.0:
-                            self.learning_rate = min(1e-2, self.learning_rate * 1.5)
+                            self.learning_rate = min(self.max_learning_rate, self.learning_rate * 1.5)
                         
                         for param_group in self.optimizer.param_groups:
                             param_group['lr'] = self.learning_rate

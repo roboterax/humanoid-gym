@@ -33,6 +33,8 @@ import torch
 import torch.nn as nn
 from torch.distributions import Normal
 from humanoid.algo.models.decision_transformer import DecisionTransformer
+from humanoid.algo.models.model import PPOTransformerModel
+
 
 class ActorCritic(nn.Module):
     is_recurrent = False
@@ -56,7 +58,15 @@ class ActorCritic(nn.Module):
         mlp_input_dim_c = num_critic_obs
         # Police
         if architecture == 'Trans' or architecture == 'Mix':
-            self.actor = DecisionTransformer(mlp_input_dim_a, num_actions, hidden_size = 192)
+            config = {"transformer":{ 
+                "num_blocks":2,
+                "num_heads":6,
+                "gru_bias":0.0,
+                "hidden_size":128,
+                "embed_dim": 384,
+                "memory_length":32,
+            }}
+            self.actor = PPOTransformerModel(config, mlp_input_dim_a, num_actions) #DecisionTransformer(mlp_input_dim_a, num_actions, hidden_size = 192)
         else:
             actor_layers = []
             actor_layers.append(nn.Linear(mlp_input_dim_a, actor_hidden_dims[0]))
