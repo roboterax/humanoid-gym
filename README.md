@@ -1,13 +1,16 @@
-# Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer
+# <a href="https://sites.google.com/view/humanoid-gym/">Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer</a>
 
-**[[Paper]](https://arxiv.org/abs/2404.05695)**
-**[[Project Page]](https://sites.google.com/view/humanoid-gym/)**
+<a href="https://sites.google.com/view/humanoid-gym/"><strong>Project Page</strong></a>
+  |
+  <a href="https://arxiv.org/abs/2404.05695"><strong>arXiv</strong></a>
+  |
+  <a href="https://twitter.com/roboterax/status/1765038672641175662"><strong>Twitter</strong></a>
 
-This repository contains the code for our paper [Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer](https://arxiv.org/abs/2404.05695) by [Xinyang Gu*](https://github.com/zlw21gxy), [Yen-Jen Wang*](https://wangyenjen.github.io/), and [Jianyu Chen](http://people.iiis.tsinghua.edu.cn/~jychen/).
+  <a href="https://github.com/zlw21gxy">Xinyang Gu*</a>, 
+  <a href="https://wangyenjen.github.io/">Yen-Jen Wang*</a>,
+  <a href="http://people.iiis.tsinghua.edu.cn/~jychen/">Jianyu Chen</a>
 
 ![Demo](./images/demo.gif)
-
-Welcome to our Humanoid-Gym! 
 
 Humanoid-Gym is an easy-to-use reinforcement learning (RL) framework based on Nvidia Isaac Gym, designed to train locomotion skills for humanoid robots, emphasizing zero-shot transfer from simulation to the real-world environment. Humanoid-Gym also integrates a sim-to-sim framework from Isaac Gym to Mujoco that allows users to verify the trained policies in different physical simulations to ensure the robustness and generalization of the policies.
 
