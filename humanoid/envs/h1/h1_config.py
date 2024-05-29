@@ -26,7 +26,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         }
     
     class env(LeggedRobotCfg.env):
-        num_envs = 4000
+        num_envs = 3000
         frame_stack = 15
         c_frame_stack = 3
         num_single_obs = 42
@@ -57,7 +57,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         friction_range = [0.1, 2.0]
         randomize_base_mass = True
         added_mass_range = [-5., 5.]
-        push_robots = True
+        push_robots = False
         push_interval_s = 4
         max_push_vel_xy = 0.5
         max_push_ang_vel = 0.4
@@ -145,28 +145,28 @@ class H1RoughCfg( LeggedRobotCfg ):
 
         class stand_scales:
             # gait
-            feet_air_time = -1.
+            feet_air_time = -1*0.
             foot_slip = 0
             feet_distance = 2
-            knee_distance = 2
+            knee_distance =2
             # contact
             feet_contact_forces = -0.01 * 0
             # vel tracking
-            tracking_lin_vel = 1.2 * 1
-            tracking_ang_vel = 1.1 * 0
+            tracking_lin_vel = 1.2 * 1.1
+            tracking_ang_vel = 1.1 * 1
             vel_mismatch_exp = 0.5  # lin_z; ang x,y
             #low_speed = 0.2
-            track_vel_hard = 0.5 * 0
+            track_vel_hard = 0.5 * 1
             # base pos
             default_joint_pos = 0.5
-            orientation = 1. * 0
-            base_height = 0.2 * 1
+            orientation = 1. * 1
+            base_height = 0.2 * 2
             base_acc = 0.2 * 1
             # energy
-            action_smoothness = -0.002
+            action_smoothness = -0.02
             torques = -1e-5
-            dof_vel = -5e-4
-            dof_acc = -1e-7
+            dof_vel = -5e-3
+            dof_acc = -1e-4
             collision = -1.
 
 class H1RoughCfgPPO( LeggedRobotCfgPPO ):

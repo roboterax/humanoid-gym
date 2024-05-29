@@ -78,7 +78,7 @@ class LeggedRobotCfg(BaseConfig):
         max_curriculum = 1.
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 10. # time before command are changed[s]
-        heading_command = True # if true: compute ang vel command from heading error
+        heading_command = False # if true: compute ang vel command from heading error
         standing_command = False
         class ranges:
             lin_vel_x = [-1.0, 1.0] # min max [m/s]
@@ -257,13 +257,11 @@ class LeggedRobotCfgPPO(BaseConfig):
         num_learning_epochs = 5
         num_mini_batches = 4 # mini batch size = num_envs*nsteps / nminibatches
         learning_rate = 1.e-3 #5.e-4
-        min_learning_rate = 7.e-5
-        max_learning_rate = 1.e-2
         schedule = 'adaptive' # could be adaptive, fixed
         gamma = 0.99
         lam = 0.95
         desired_kl = 0.01
-        max_grad_norm = 1.
+        max_grad_norm = 0.2
 
     class runner:
         policy_class_name = 'ActorCritic'

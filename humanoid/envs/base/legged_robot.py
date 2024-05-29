@@ -341,7 +341,8 @@ class LeggedRobot(BaseTask):
 
         # set small commands to zero
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
-
+        self.commands[env_ids, 3] = 0
+        self.commands[env_ids, 2] = 0
         absolute_vel_commands =  torch.sqrt(self.commands[:,0]**2 + self.commands[:,1]**2)
 
         self.moving_idx = torch.nonzero(torch.gt(absolute_vel_commands, 0)).squeeze()
