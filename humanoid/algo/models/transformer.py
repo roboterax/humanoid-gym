@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .models.attention import *
-from .models.gru import *
+from .attention import *
+from .gru import *
 
 class SinusoidalPE(nn.Module):
     """Relative positional encoding"""
@@ -123,17 +123,17 @@ class GatedTransformerXL(nn.Module):
         h = self.activation(self.linear_embedding(h))
 
         # Add positional encoding to every transformer block input
-        h_indices = torch.zeros_like(memory_indices)
+        h_indices = torch.zeros_like(h[:,:,0])
         h_indices[:] = torch.tensor([i for i in range(len(h_indices[0]))])
         #pos_embedding = self.pos_embedding[memory_indices.long()]
         #memories = memories + pos_embedding.unsqueeze(2)
-        pos_embedding = self.pos_embedding[h_indices.long()]
+        pos_embedding = self.pos_embedding[h_indices.long()].cuda()
         h = h + pos_embedding
         # Forward transformer blocks
         out_memories = []
         for i, block in enumerate(self.transformer_blocks):
             out_memories.append(h.detach())
-            h = block(h.unsqueeze(1), memories[:, :, i], mask) # args:  query, key, mask
+            h = block(h, h, mask) # args:  query, key, mask
             h = h.squeeze()
             if len(h.shape) == 1:
                 h = h.unsqueeze(0)
