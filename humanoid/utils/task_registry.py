@@ -158,10 +158,9 @@ class TaskRegistry():
         resume = train_cfg.runner.resume
         if resume:
             # load previously trained model
-            log_root = '/home/ziluoding/humanoid-gym/logs/h1/'
             resume_path = get_load_path(log_root, load_run=train_cfg.runner.load_run, checkpoint=train_cfg.runner.checkpoint)
             print(f"Loading model from: {resume_path}")
-            runner.load(resume_path, load_optimizer=True)
+            runner.load(resume_path, load_optimizer=False)
         return runner, train_cfg
 
 # make global task registry

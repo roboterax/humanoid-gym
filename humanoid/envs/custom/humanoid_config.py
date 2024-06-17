@@ -69,7 +69,7 @@ class XBotLCfg(LeggedRobotCfg):
         fix_base_link = False
 
     class terrain(LeggedRobotCfg.terrain):
-        mesh_type = 'trimesh'
+        mesh_type = 'plane'
         # mesh_type = 'trimesh'
         curriculum = False
         # rough terrain only:

@@ -222,10 +222,10 @@ class XBotLFreeEnv(LeggedRobot):
         self.privileged_obs_buf = torch.cat((
             self.command_input,  # 2 + 3
             (self.dof_pos - self.default_joint_pd_target) * \
-            self.obs_scales.dof_pos,  # 10
-            self.dof_vel * self.obs_scales.dof_vel,  # 10
-            self.actions,  # 10
-            diff,  # 10
+            self.obs_scales.dof_pos,  # 12
+            self.dof_vel * self.obs_scales.dof_vel,  # 12
+            self.actions,  # 12
+            diff,  # 12
             self.base_lin_vel * self.obs_scales.lin_vel,  # 3
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
@@ -238,10 +238,10 @@ class XBotLFreeEnv(LeggedRobot):
         ), dim=-1)
 
         obs_buf = torch.cat((
-            self.command_input,  # 5 = 2D(sin cos) + 3D(vel_x, vel_y, aug_vel_yaw),
-            q,    # 10D
-            dq,  # 10D
-            self.actions, # 10D
+            self.command_input,  # 5 = 2D(sin cos) + 3D(vel_x, vel_y, aug_vel_yaw), # 12D
+            q,    # 12D
+            dq,  # 12D   
+            self.actions,
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
         ), dim=-1)
@@ -251,7 +251,7 @@ class XBotLFreeEnv(LeggedRobot):
             self.privileged_obs_buf = torch.cat((self.privileged_obs_buf, heights), dim=-1)
         
         if self.add_noise:  
-            obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[:-1] * self.cfg.noise.noise_level
+            obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[1:] * self.cfg.noise.noise_level
         else:
             obs_now = obs_buf.clone()
         obs_now = torch.cat((phase[:, None], obs_now.clone()), dim=-1)
