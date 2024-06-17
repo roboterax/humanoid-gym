@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from .models.transformer import GatedTransformerXL
+from .transformer import GatedTransformerXL
 
 
 class TrajectoryModel(nn.Module):
@@ -70,7 +70,7 @@ class PPOTransformerModel(nn.Module):
         torch.nn.init.constant_(layer.bias, bias_const)
         return layer
     
-    def forward(self,state,memory,memory_mask,memory_indices):
+    def forward(self,states,memory=None,memory_mask=None,memory_indices=None):
         """
         Overview:
             Forward method.
@@ -82,11 +82,23 @@ class PPOTransformerModel(nn.Module):
             - policy: (torch.Tensor): policy with shape (batch_size,num_action)
             - value: (torch.Tensor): value with shape (batch_size,1)
         """
+        #print(state.shape)
+        self.obs_dim = 42
+        self.act_dim = 10
+        batch_size, seq_length = states.shape[0], int(states.shape[1]/self.obs_dim)
+
+        states = states.view(batch_size, seq_length, self.obs_dim)
+        actions = states[:,:,26:26+self.act_dim]
+        #timesteps = states[:,:, 0].long()
+        #batch_size, seq_length, _ = state.shape
+        if memory_mask is None:
+            # attention mask for GPT: 1 if can be attended to, 0 if not
+            memory_mask = torch.ones((batch_size, seq_length), dtype=torch.long).cuda()
         
-        out        = self.fc(state)
+        out        = self.fc(states)
         out,memory = self.transformer(out,memory,memory_mask,memory_indices)
         out        = out.squeeze(1)
         policy     = self.policy(out)
         #value      = self.value(out)
 
-        return policy#, value, memory
+        return policy[:,-1]#, value, memory

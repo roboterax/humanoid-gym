@@ -69,7 +69,7 @@ class XBotLCfg(LeggedRobotCfg):
         fix_base_link = False
 
     class terrain(LeggedRobotCfg.terrain):
-        mesh_type = 'plane'
+        mesh_type = 'trimesh'
         # mesh_type = 'trimesh'
         curriculum = False
         # rough terrain only:
@@ -114,10 +114,6 @@ class XBotLCfg(LeggedRobotCfg):
             'right_ankle_pitch_joint': -0.,
             'right_ankle_roll_joint': 0.,
         }
-
-
-import torch
-import torch.nn.functional as F
 
     class control(LeggedRobotCfg.control):
         # PD Drive parameters:

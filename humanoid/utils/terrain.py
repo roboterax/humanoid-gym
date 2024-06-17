@@ -36,7 +36,7 @@ from isaacgym import terrain_utils
 from humanoid.envs.base.legged_robot_config import LeggedRobotCfg
 
 class Terrain:
-    def __init__(self, cfg: LeggedRobotCfg.terrain, num_robots) -> None:
+    def __init__(self, cfg: LeggedRobotCfg.terrain, num_robots, proportions=None) -> None:
 
         self.cfg = cfg
         self.num_robots = num_robots
@@ -45,6 +45,7 @@ class Terrain:
             return
         self.env_length = cfg.terrain_length
         self.env_width = cfg.terrain_width
+        #if proportions != None:
         self.proportions = [np.sum(cfg.terrain_proportions[:i+1]) for i in range(len(cfg.terrain_proportions))]
 
         self.cfg.num_sub_terrains = cfg.num_rows * cfg.num_cols
@@ -187,8 +188,8 @@ def pit_terrain(terrain, depth, platform_size=1.):
     terrain.height_field_raw[x1:x2, y1:y2] = -depth
 
 class HumanoidTerrain(Terrain):
-    def __init__(self, cfg: LeggedRobotCfg.terrain, num_robots) -> None:
-        super().__init__(cfg, num_robots)
+    def __init__(self, cfg: LeggedRobotCfg.terrain, num_robots, proportions=None) -> None:
+        super().__init__(cfg, num_robots, proportions)
 
     def randomized_terrain(self):
         for k in range(self.cfg.num_sub_terrains):

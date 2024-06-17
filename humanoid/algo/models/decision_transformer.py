@@ -8,7 +8,7 @@ from .model import TrajectoryModel
 from .trajectory_gpt2 import GPT2Model
 
 from humanoid.envs.h1.h1_config import H1RoughCfg
-
+from .gru import *
 
 class DecisionTransformer(TrajectoryModel):
 
@@ -54,6 +54,16 @@ class DecisionTransformer(TrajectoryModel):
             *([nn.Linear(hidden_size, self.act_dim)] + ([nn.Tanh()] if action_tanh else []))
         )
         self.predict_return = torch.nn.Linear(hidden_size, 1)
+
+        self.layer_norm2 = nn.LayerNorm(hidden_size)
+        self.gate1       = GRUGate(input_dim=hidden_size, bg=0.0)
+        self.gate2       = GRUGate(input_dim=hidden_size, bg=0.0)
+        self.fc = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.GELU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.GELU()
+        )
 
     def forward(self, states, attention_mask=None):
 
@@ -102,6 +112,10 @@ class DecisionTransformer(TrajectoryModel):
             attention_mask=stacked_attention_mask,
         )
         x = transformer_outputs['last_hidden_state']
+
+        x  = self.gate1(x, x)
+        e  = self.fc(self.layer_norm2(x))
+        x  = self.gate2(x, e)
 
         # reshape x so that the second dimension corresponds to the original
         # returns (0), states (1), or actions (2); i.e. x[:,1,t] is the token for s_t

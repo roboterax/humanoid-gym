@@ -27,7 +27,6 @@ class SinusoidalPE(nn.Module):
         sinusoidal_inp = seq.view(-1,1) * self.inv_freqs.view(1,-1)
         pos_emb        = torch.cat((sinusoidal_inp.sin(), sinusoidal_inp.cos()), dim = -1)
         return pos_emb
-
 class TransformerBlock(nn.Module):
     def __init__(self, embed_dim, num_heads, config):
         """
@@ -72,6 +71,9 @@ class TransformerBlock(nn.Module):
         assert torch.isnan(out).any() == False, "Transformer block returned NaN!"
 
         return out
+
+
+
 
 
 class GatedTransformerXL(nn.Module):
@@ -123,23 +125,15 @@ class GatedTransformerXL(nn.Module):
         h = self.activation(self.linear_embedding(h))
 
         # Add positional encoding to every transformer block input
-        h_indices = torch.zeros_like(h[:,:,0])
-        h_indices[:] = torch.tensor([i for i in range(len(h_indices[0]))])
         #pos_embedding = self.pos_embedding[memory_indices.long()]
         #memories = memories + pos_embedding.unsqueeze(2)
-        #pos_embedding = self.pos_embedding[h_indices.long()].cuda()
-        h = h #+ pos_embedding
         # Forward transformer blocks
         out_memories = []
         for i, block in enumerate(self.transformer_blocks):
             out_memories.append(h.detach())
-            h = block(h, h, mask) # args:  query, key, mask
+            #h = block(h.unsqueeze(1), memories[:, :, i], mask) # args:  query, key, mask
+            h = block(h, h, mask)
             h = h.squeeze()
             if len(h.shape) == 1:
                 h = h.unsqueeze(0)
         return h, torch.stack(out_memories, dim=1)
-
-
-
-
-

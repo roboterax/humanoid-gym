@@ -81,6 +81,7 @@ class LeggedRobot(BaseTask):
         self._init_buffers()
         self._prepare_reward_function()
         self.init_done = True
+        self.standing_terrain_levels = 0
 
     def step(self, actions):
         """ Apply actions, simulate, call self.post_physics_step()
@@ -225,9 +226,9 @@ class LeggedRobot(BaseTask):
         for i in range(len(self.reward_functions)):
             name = self.reward_names[i]
             rew = self.reward_functions[i]() 
-            #rew = rew * self.standing_reward_scales[name]
-            rew[self.moving_idx] = rew[self.moving_idx] * self.reward_scales[name]
-            rew[self.standing_idx] = rew[self.standing_idx] * self.standing_reward_scales[name]
+            rew = rew * self.reward_scales[name]
+            #rew[self.moving_idx] = rew[self.moving_idx] * self.reward_scales[name]
+            #rew[self.standing_idx] = rew[self.standing_idx] * self.standing_reward_scales[name]
             self.rew_buf += rew
             self.episode_sums[name] += rew
         if self.cfg.rewards.only_positive_rewards:
@@ -327,6 +328,9 @@ class LeggedRobot(BaseTask):
         Args:
             env_ids (List[int]): Environments ids for which new commands are needed
         """
+        #if random.random() < 11:# and self.cfg.commands.standing_command:
+        #    self.commands[env_ids, 0] = 0
+        #    self.commands[env_ids, 1] = 0
         #else:
         self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
@@ -338,13 +342,12 @@ class LeggedRobot(BaseTask):
 
         # set small commands to zero
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
-        if random.random() < 0.3 and self.cfg.commands.standing_command:
-            self.commands[env_ids, 0] = 0
-            self.commands[env_ids, 1] = 0
-            self.commands[env_ids, 3] = 0
-            self.commands[env_ids, 2] = 0
-
+        # self.commands[env_ids, 3] = 0
+        # self.commands[env_ids, 2] = 0
+        # self.commands[env_ids, 0] = 0
+        # self.commands[env_ids, 1] = 0
         absolute_vel_commands =  torch.sqrt(self.commands[:,0]**2 + self.commands[:,1]**2)
+
         self.moving_idx = torch.nonzero(torch.gt(absolute_vel_commands, 0)).squeeze()
         self.standing_idx = torch.nonzero(torch.eq(absolute_vel_commands, 0)).squeeze()
         # print('standing_idx')
@@ -421,20 +424,33 @@ class LeggedRobot(BaseTask):
             env_ids (List[int]): ids of environments being reset
         """
         # Implement Terrain curriculum
+        behaviour = self.cfg.commands.behaviour
         if not self.init_done:
             # don't change on initial reset
             return
-        distance = torch.norm(self.root_states[env_ids, :2] - self.env_origins[env_ids, :2], dim=1)
-        # robots that walked far enough progress to harder terains
-        move_up = distance > self.terrain.env_length / 2
-        # robots that walked less than half of their required distance go to simpler terrains
-        move_down = (distance < torch.norm(self.commands[env_ids, :2], dim=1)*self.max_episode_length_s*0.5) * ~move_up
-        self.terrain_levels[env_ids] += 1 * move_up - 1 * move_down
-        # Robots that solve the last level are sent to a random one
-        self.terrain_levels[env_ids] = torch.where(self.terrain_levels[env_ids]>=self.max_terrain_level,
+        if behaviour.lower() is 'joint' or behaviour.lower() is 'Walk':
+            distance = torch.norm(self.root_states[env_ids, :2] - self.env_origins[env_ids, :2], dim=1)
+            # robots that walked far enough progress to harder terains
+            move_up = distance > self.terrain.env_length / 2
+            # robots that walked less than half of their required distance go to simpler terrains
+            move_down = (distance < torch.norm(self.commands[env_ids, :2], dim=1)*self.max_episode_length_s*0.5) * ~move_up
+            self.terrain_levels[env_ids] += 1 * move_up - 1 * move_down
+            # Robots that solve the last level are sent to a random one
+            self.terrain_levels[env_ids] = torch.where(self.terrain_levels[env_ids]>=self.max_terrain_level,
                                                    torch.randint_like(self.terrain_levels[env_ids], self.max_terrain_level),
                                                    torch.clip(self.terrain_levels[env_ids], 0)) # (the minumum level is zero)
-        self.env_origins[env_ids] = self.terrain_origins[self.terrain_levels[env_ids], self.terrain_types[env_ids]]
+            self.env_origins[env_ids] = self.terrain_origins[self.terrain_levels[env_ids], self.terrain_types[env_ids]]
+        elif behaviour.lower() is 'stand':
+            terrain_proportions = [0.0 for _ in range(len(self.cfg.terrain.terrain_proportions))]
+            # if torch.mean(self.episode_sums["tracking_lin_vel"][env_ids]) / self.max_episode_length > 0.8 * self.reward_scales["tracking_lin_vel"]:
+            #     for i in range(self.standing_terrain_levels):
+            #         terrain_proportions[i] = 1 / self.standing_terrain_levels
+            #     proportions = [np.sum(terrain_proportions[:i+1]) for i in range(len(terrain_proportions))]
+            #     self.terrain = HumanoidTerrain(self.cfg.terrain, self.num_envs, proportions)
+            #     self._create_trimesh()
+            #     self._create_envs()
+
+
     
     def update_command_curriculum(self, env_ids):
         """ Implements a curriculum of increasing commands
@@ -924,7 +940,7 @@ class LeggedRobot(BaseTask):
         """
         joint_diff = self.dof_pos - self.default_joint_pd_target
         left_yaw_roll = joint_diff[:, :2]
-        right_yaw_roll = joint_diff[:, 6: 8]
+        right_yaw_roll = joint_diff[:, 5: 7]
         yaw_roll = torch.norm(left_yaw_roll, dim=1) + torch.norm(right_yaw_roll, dim=1)
         yaw_roll = torch.clamp(yaw_roll - 0.1, 0, 50)
         return torch.exp(-yaw_roll * 100) - 0.01 * torch.norm(joint_diff, dim=1)

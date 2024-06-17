@@ -49,7 +49,7 @@ class LeggedRobotCfg(BaseConfig):
         torque_limit = 0.85
 
     class terrain:
-        mesh_type = 'trimesh' # "heightfield" # none, plane, heightfield or trimesh
+        mesh_type = 'trimesh'#'trimesh' # "heightfield" # none, plane, heightfield or trimesh
         horizontal_scale = 0.1 # [m]
         vertical_scale = 0.005 # [m]
         border_size = 25 # [m]
@@ -69,7 +69,8 @@ class LeggedRobotCfg(BaseConfig):
         num_rows= 20 # number of terrain rows (levels)
         num_cols = 20 # number of terrain cols (types)
         # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
-        terrain_proportions = [0.2, 0.2, 0.3, 0.1, 0.1, 0.05, 0.05]
+        terrain_proportions = [0.3, 0.2, 0.2, 0.1, 0.1, 0.05, 0.05]
+        #terrain_proportions = [0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0]
         # trimesh only:
         slope_treshold = 0.75 # slopes above this threshold will be corrected to vertical surfaces
 
@@ -240,7 +241,7 @@ class LeggedRobotCfgPPO(BaseConfig):
     seed = 1
     runner_class_name = 'OnPolicyRunner'
     class policy:
-        architecture = 'MLP' # choose from 'Mix', 'Trans', 'MLP', and 'RNN'
+        architecture = 'Mix' # choose from 'Mix', 'Trans', 'MLP', and 'RNN'
         teaching_model_path = ''
         init_noise_std = 1.0
         actor_hidden_dims = [512, 256, 128]
@@ -261,7 +262,7 @@ class LeggedRobotCfgPPO(BaseConfig):
         gamma = 0.99
         lam = 0.95
         desired_kl = 0.01
-        max_grad_norm = 0.2
+        max_grad_norm = 0.05
 
     class runner:
         policy_class_name = 'ActorCritic'
@@ -270,7 +271,7 @@ class LeggedRobotCfgPPO(BaseConfig):
         max_iterations = 50000 # number of policy updates
 
         # logging
-        save_interval = 100 # check for potential saves every this many iterations
+        save_interval = 1000 # check for potential saves every this many iterations
         experiment_name = 'test'
         run_name = ''
         # load and resume
