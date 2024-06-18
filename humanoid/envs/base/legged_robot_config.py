@@ -49,7 +49,7 @@ class LeggedRobotCfg(BaseConfig):
         torque_limit = 0.85
 
     class terrain:
-        mesh_type = 'trimesh' # "heightfield" # none, plane, heightfield or trimesh
+        mesh_type = 'plane' # "heightfield" # none, plane, heightfield or trimesh
         horizontal_scale = 0.1 # [m]
         vertical_scale = 0.005 # [m]
         border_size = 25 # [m]
@@ -240,7 +240,7 @@ class LeggedRobotCfgPPO(BaseConfig):
     seed = 1
     runner_class_name = 'OnPolicyRunner'
     class policy:
-        architecture = 'MLP' # choose from 'Mix', 'Trans', 'MLP', and 'RNN'
+        architecture = 'Trans' # choose from 'Mix', 'Trans', 'MLP', and 'RNN'
         teaching_model_path = ''
         init_noise_std = 1.0
         actor_hidden_dims = [512, 256, 128]

@@ -225,9 +225,9 @@ class LeggedRobot(BaseTask):
         for i in range(len(self.reward_functions)):
             name = self.reward_names[i]
             rew = self.reward_functions[i]() 
-            #rew = rew * self.standing_reward_scales[name]
-            rew[self.moving_idx] = rew[self.moving_idx] * self.reward_scales[name]
-            rew[self.standing_idx] = rew[self.standing_idx] * self.standing_reward_scales[name]
+            rew = rew * self.reward_scales[name]
+            #rew[self.moving_idx] = rew[self.moving_idx] * self.reward_scales[name]
+            #rew[self.standing_idx] = rew[self.standing_idx] * self.standing_reward_scales[name]
             self.rew_buf += rew
             self.episode_sums[name] += rew
         if self.cfg.rewards.only_positive_rewards:
@@ -327,7 +327,10 @@ class LeggedRobot(BaseTask):
         Args:
             env_ids (List[int]): Environments ids for which new commands are needed
         """
-        #else:
+        # if random.random() < 11:# and self.cfg.commands.standing_command:
+        #     self.commands[env_ids, 0] = 0
+        #     self.commands[env_ids, 1] = 0
+        # else:
         self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         
@@ -338,13 +341,10 @@ class LeggedRobot(BaseTask):
 
         # set small commands to zero
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
-        if random.random() < 0.3 and self.cfg.commands.standing_command:
-            self.commands[env_ids, 0] = 0
-            self.commands[env_ids, 1] = 0
-            self.commands[env_ids, 3] = 0
-            self.commands[env_ids, 2] = 0
-
+        #self.commands[env_ids, 3] = 0
+        #self.commands[env_ids, 2] = 0
         absolute_vel_commands =  torch.sqrt(self.commands[:,0]**2 + self.commands[:,1]**2)
+
         self.moving_idx = torch.nonzero(torch.gt(absolute_vel_commands, 0)).squeeze()
         self.standing_idx = torch.nonzero(torch.eq(absolute_vel_commands, 0)).squeeze()
         # print('standing_idx')

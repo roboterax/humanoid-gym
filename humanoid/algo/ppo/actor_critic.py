@@ -64,9 +64,10 @@ class ActorCritic(nn.Module):
                 "gru_bias":0.0,
                 "hidden_size":128,
                 "embed_dim": 384,
-                "memory_length":32,
+                "memory_length":15,
             }}
-            self.actor = PPOTransformerModel(config, mlp_input_dim_a, num_actions) #DecisionTransformer(mlp_input_dim_a, num_actions, hidden_size = 192)
+            self.actor = PPOTransformerModel(config, mlp_input_dim_a, num_actions) 
+            #self.actor = DecisionTransformer(mlp_input_dim_a, num_actions, hidden_size = 192)
         else:
             actor_layers = []
             actor_layers.append(nn.Linear(mlp_input_dim_a, actor_hidden_dims[0]))
@@ -135,7 +136,8 @@ class ActorCritic(nn.Module):
         return Normal(mean, mean*0. + self.std)
 
     def act(self, observations, **kwargs):
-        #print(observations.shape)
+        print('rrrrr')
+        print(observations.shape)
         self.distribution = self.update_distribution(observations)
         return self.distribution.sample()  
 

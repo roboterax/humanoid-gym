@@ -38,7 +38,6 @@ from collections import deque
 from datetime import datetime
 from .ppo import PPO
 from .actor_critic import ActorCritic, Teaching_ActorCritic
-from .actor_critic_recurrent import ActorCriticRecurrent
 from humanoid.algo.vec_env import VecEnv
 from torch.utils.tensorboard import SummaryWriter
 
@@ -64,24 +63,16 @@ class OnPolicyRunner:
             num_critic_obs = self.env.num_privileged_obs
         else:
             num_critic_obs = self.env.num_obs
-        if self.policy_cfg["architecture"] == 'RNN':
-            actor_critic_class = eval('ActorCriticRecurrent')  # ActorCritic
-            actor_critic: ActorCriticRecurrent = actor_critic_class(
-                self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
-            ).to(self.device)
-        else:
-            actor_critic_class = eval('ActorCritic')  # ActorCritic
-            actor_critic: ActorCritic = actor_critic_class(
-                self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
-            ).to(self.device)
-
+        actor_critic_class = eval(self.cfg["policy_class_name"])  # ActorCritic
+        actor_critic: ActorCritic = actor_critic_class(
+            self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
+        ).to(self.device)
+        teaching_actorCritic = None
         if self.policy_cfg["architecture"] == 'Mix':
             teaching_actorCritic = Teaching_ActorCritic(self.env.num_obs, self.env.num_teaching_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg)
             print('Loading Pretrained Teaching Model')
-            teaching_actorCritic.load_state_dict(torch.load(self.policy_cfg["teaching_model_path"])["model_state_dict"])
+            #teaching_actorCritic.load_state_dict(torch.load(self.policy_cfg["teaching_model_path"])["model_state_dict"])
             print('Pretrained Teaching Model Loaded')
-        else:
-            teaching_actorCritic = None
 
         alg_class = eval(self.cfg["algorithm_class_name"])  # PPO
         self.alg: PPO = alg_class(actor_critic, teaching_actorCritic, device=self.device, **self.alg_cfg)
@@ -148,7 +139,13 @@ class OnPolicyRunner:
         tot_iter = self.current_learning_iteration + num_learning_iterations
         for it in range(self.current_learning_iteration, tot_iter):
             start = time.time()
+
             # Rollout
+            # if it != 0 and it % 250 == 0:
+            #     self.alg.imitation_coef /= 1.5
+            #     if self.alg.imitation_coef < 2:
+            #         self.alg.min_learning_rate = 1e-5
+
             with torch.inference_mode():
                 for i in range(self.num_steps_per_env):
                     actions = self.alg.act(obs, critic_obs)

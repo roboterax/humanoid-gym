@@ -222,10 +222,10 @@ class XBotLFreeEnv(LeggedRobot):
         self.privileged_obs_buf = torch.cat((
             self.command_input,  # 2 + 3
             (self.dof_pos - self.default_joint_pd_target) * \
-            self.obs_scales.dof_pos,  # 10
-            self.dof_vel * self.obs_scales.dof_vel,  # 10
-            self.actions,  # 10
-            diff,  # 10
+            self.obs_scales.dof_pos,  # 12
+            self.dof_vel * self.obs_scales.dof_vel,  # 12
+            self.actions,  # 12
+            diff,  # 12
             self.base_lin_vel * self.obs_scales.lin_vel,  # 3
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
@@ -238,10 +238,10 @@ class XBotLFreeEnv(LeggedRobot):
         ), dim=-1)
 
         obs_buf = torch.cat((
-            self.command_input,  # 5 = 2D(sin cos) + 3D(vel_x, vel_y, aug_vel_yaw), 
-            q,    # 10D
-            dq,  # 10D   
-            self.actions, # 10D
+            self.command_input,  # 5 = 2D(sin cos) + 3D(vel_x, vel_y, aug_vel_yaw), # 12D
+            q,    # 12D
+            dq,  # 12D   
+            self.actions,
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
         ), dim=-1)
@@ -251,7 +251,7 @@ class XBotLFreeEnv(LeggedRobot):
             self.privileged_obs_buf = torch.cat((self.privileged_obs_buf, heights), dim=-1)
         
         if self.add_noise:  
-            obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[1:] * self.cfg.noise.noise_level
+            obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[:-1] * self.cfg.noise.noise_level
         else:
             obs_now = obs_buf.clone()
         obs_now = torch.cat((phase[:, None], obs_now.clone()), dim=-1)
@@ -261,7 +261,7 @@ class XBotLFreeEnv(LeggedRobot):
 
         obs_buf_all = torch.stack([self.obs_history[i]
                                    for i in range(self.obs_history.maxlen)], dim=1)  # N,T,K
-
+        print(self.obs_buf.shape)
         self.obs_buf = obs_buf_all.reshape(self.num_envs, -1)  # N, T*K
         self.privileged_obs_buf = torch.cat([self.critic_history[i] for i in range(self.cfg.env.c_frame_stack)], dim=1)
 
@@ -273,12 +273,13 @@ class XBotLFreeEnv(LeggedRobot):
             self.critic_history[i][env_ids] *= 0
 
 # ================================================ Rewards ================================================== #
-    def _reward_joint_pos(self):
+     def _reward_joint_pos(self):
         """
         Calculates the reward based on the difference between the current joint positions and the target joint positions.
         """
         joint_pos = self.dof_pos.clone()
         pos_target = self.ref_dof_pos.clone()
+        pos_target = self.default_joint_pd_target.clone()
         diff = joint_pos - pos_target
         r = torch.exp(-2 * torch.norm(diff, dim=1)) - 0.2 * torch.norm(diff, dim=1).clamp(0, 0.5)
         return r
@@ -344,6 +345,7 @@ class XBotLFreeEnv(LeggedRobot):
         """
         contact = self.contact_forces[:, self.feet_indices, 2] > 5.
         stance_mask = self._get_gait_phase()
+        #stance_mask[:] = 1
         reward = torch.where(contact == stance_mask, 1, -0.3)
         return torch.mean(reward, dim=1)
 
@@ -370,7 +372,7 @@ class XBotLFreeEnv(LeggedRobot):
         """
         joint_diff = self.dof_pos - self.default_joint_pd_target
         left_yaw_roll = joint_diff[:, :2]
-        right_yaw_roll = joint_diff[:, 6: 8]
+        right_yaw_roll = joint_diff[:, 5: 7]
         yaw_roll = torch.norm(left_yaw_roll, dim=1) + torch.norm(right_yaw_roll, dim=1)
         yaw_roll = torch.clamp(yaw_roll - 0.1, 0, 50)
         return torch.exp(-yaw_roll * 100) - 0.01 * torch.norm(joint_diff, dim=1)
@@ -382,6 +384,7 @@ class XBotLFreeEnv(LeggedRobot):
         of its feet when they are in contact with the ground.
         """
         stance_mask = self._get_gait_phase()
+        #stance_mask[:] = 1
         measured_heights = torch.sum(
             self.rigid_state[:, self.feet_indices, 2] * stance_mask, dim=1) / torch.sum(stance_mask, dim=1)
         base_height = self.root_states[:, 2] - (measured_heights - 0.05)

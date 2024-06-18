@@ -32,6 +32,7 @@
 
 from humanoid.envs import *
 from humanoid.utils import get_args, task_registry
+import os
 
 def train(args):
     env, env_cfg = task_registry.make_env(name=args.task, args=args)

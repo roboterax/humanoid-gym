@@ -26,12 +26,12 @@ class H1RoughCfg( LeggedRobotCfg ):
         }
     
     class env(LeggedRobotCfg.env):
-        num_envs = 3000
+        num_envs = 2000
         frame_stack = 15
         c_frame_stack = 3
         num_single_obs = 42
         num_actions = 10
-        num_observations = int(frame_stack * num_single_obs)#num_single_obs#int(frame_stack * num_single_obs)
+        num_observations = num_single_obs #int(frame_stack * num_single_obs)#num_single_obs#int(frame_stack * num_single_obs)
         num_teaching_observations = int(frame_stack * (num_single_obs-1))
         single_num_privileged_obs = 65
         num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
@@ -122,7 +122,7 @@ class H1RoughCfg( LeggedRobotCfg ):
             feet_air_time = 1.
             foot_slip = -0.05
             feet_distance = 2
-            knee_distance = 2
+            knee_distance = 5
             # contact
             feet_contact_forces = -0.01
             # vel tracking
@@ -144,23 +144,27 @@ class H1RoughCfg( LeggedRobotCfg ):
             collision = -1.
 
         class stand_scales:
+            # reference motion tracking
+            joint_pos = 1.6 * 0
+            feet_clearance = 1. * 0
+            feet_contact_number = 1.2
             # gait
             feet_air_time = -1*0.
             foot_slip = 0
             feet_distance = 2
-            knee_distance =2
+            knee_distance = 2
             # contact
             feet_contact_forces = -0.01 * 0
             # vel tracking
-            tracking_lin_vel = 1.2 * 1.1
-            tracking_ang_vel = 1.1 * 1
+            tracking_lin_vel = 1.2
+            tracking_ang_vel = 1.1
             vel_mismatch_exp = 0.5  # lin_z; ang x,y
             #low_speed = 0.2
             track_vel_hard = 0.5 * 1
             # base pos
-            default_joint_pos = 0.5
-            orientation = 1. * 1
-            base_height = 0.2 * 2
+            default_joint_pos = 0.5 * 0
+            orientation = 1. * 1 * 0
+            base_height = 0.2 * 1
             base_acc = 0.2 * 1
             # energy
             action_smoothness = -0.02
