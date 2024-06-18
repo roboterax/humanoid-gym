@@ -67,7 +67,9 @@ class OnPolicyRunner:
         actor_critic: ActorCritic = actor_critic_class(
             self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
         ).to(self.device)
+
         teaching_actorCritic = None
+
         if self.policy_cfg["architecture"] == 'Mix':
             teaching_actorCritic = Teaching_ActorCritic(self.env.num_obs, self.env.num_teaching_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg)
             print('Loading Pretrained Teaching Model')
@@ -80,22 +82,13 @@ class OnPolicyRunner:
         self.save_interval = self.cfg["save_interval"]
 
         # init storage and model
-        if self.policy_cfg['architecture'] == 'Mix' or self.policy_cfg['architecture'] == 'Trans':
-            self.alg.init_storage(
-                self.env.num_envs,
-                self.num_steps_per_env,
-                [int(self.env.num_obs) * self.env.frame_stack],
-                [self.env.num_privileged_obs],
-                [self.env.num_actions],
-            )
-        else: 
-            self.alg.init_storage(
-                self.env.num_envs,
-                self.num_steps_per_env,
-                [int(self.env.num_obs)],
-                [self.env.num_privileged_obs],
-                [self.env.num_actions],
-            )
+        self.alg.init_storage(
+            self.env.num_envs,
+            self.num_steps_per_env,
+            [int(self.env.num_obs * self.env.frame_stack)],
+            [self.env.num_privileged_obs],
+            [self.env.num_actions],
+        )
 
         # Log
         self.log_dir = log_dir

@@ -193,6 +193,7 @@ class PPO:
                 #teaching_mean = teaching_distribution.mean.detach().clone()
                 #imitation_loss = torch.mean(torch.log(teaching_stddev/distribution.stddev) + (distribution.stddev**2 + (distribution.mean - teaching_mean)**2) / (2*teaching_stddev**2) - 0.5)  
 
+
                 loss = surrogate_loss + self.value_loss_coef * value_loss - self.entropy_coef * entropy_batch.mean() #+ self.imitation_coef * imitation_loss
 
                 # Gradient step

@@ -57,7 +57,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         friction_range = [0.1, 2.0]
         randomize_base_mass = True
         added_mass_range = [-5., 5.]
-        push_robots = True
+        push_robots = False
         push_interval_s = 4
         max_push_vel_xy = 0.5
         max_push_ang_vel = 0.4
