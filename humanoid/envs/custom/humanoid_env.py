@@ -116,6 +116,7 @@ class XBotLFreeEnv(LeggedRobot):
         stance_mask[:, 1] = sin_pos < 0
         # Double support phase
         stance_mask[torch.abs(sin_pos) < 0.1] = 1
+        stance_mask[:] = 1
 
         return stance_mask
     
@@ -218,7 +219,7 @@ class XBotLFreeEnv(LeggedRobot):
         dq = self.dof_vel * self.obs_scales.dof_vel
         
         diff = self.dof_pos - self.ref_dof_pos
-
+        
         self.privileged_obs_buf = torch.cat((
             self.command_input,  # 2 + 3
             (self.dof_pos - self.default_joint_pd_target) * \
@@ -261,7 +262,6 @@ class XBotLFreeEnv(LeggedRobot):
 
         obs_buf_all = torch.stack([self.obs_history[i]
                                    for i in range(self.obs_history.maxlen)], dim=1)  # N,T,K
-        print(self.obs_buf.shape)
         self.obs_buf = obs_buf_all.reshape(self.num_envs, -1)  # N, T*K
         self.privileged_obs_buf = torch.cat([self.critic_history[i] for i in range(self.cfg.env.c_frame_stack)], dim=1)
 
@@ -345,7 +345,7 @@ class XBotLFreeEnv(LeggedRobot):
         """
         contact = self.contact_forces[:, self.feet_indices, 2] > 5.
         stance_mask = self._get_gait_phase()
-        #stance_mask[:] = 1
+        stance_mask[:] = 1
         reward = torch.where(contact == stance_mask, 1, -0.3)
         return torch.mean(reward, dim=1)
 
@@ -384,7 +384,7 @@ class XBotLFreeEnv(LeggedRobot):
         of its feet when they are in contact with the ground.
         """
         stance_mask = self._get_gait_phase()
-        #stance_mask[:] = 1
+        stance_mask[:] = 1
         measured_heights = torch.sum(
             self.rigid_state[:, self.feet_indices, 2] * stance_mask, dim=1) / torch.sum(stance_mask, dim=1)
         base_height = self.root_states[:, 2] - (measured_heights - 0.05)

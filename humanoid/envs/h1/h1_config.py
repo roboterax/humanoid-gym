@@ -91,7 +91,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         decimation = 10
 
     class asset( LeggedRobotCfg.asset ):
-        file = '/home/ps/humanoid-gym/resources/robots/h1/urdf/h1.urdf'
+        file = '/home/ziluoding/humanoid-gym/resources/robots/h1/urdf/h1.urdf'
         name = "h1"
         foot_name = "ankle"
         penalize_contacts_on = ["hip", "knee"]
