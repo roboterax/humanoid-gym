@@ -45,7 +45,7 @@ from humanoid.envs.base.base_task import BaseTask
 # from humanoid.utils.terrain import Terrain
 from humanoid.utils.math import quat_apply_yaw, wrap_to_pi, torch_rand_sqrt_float
 from humanoid.utils.helpers import class_to_dict
-from .legged_robot_config import LeggedRobotCfg
+from .legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
 
 def get_euler_xyz_tensor(quat):
@@ -74,6 +74,7 @@ class LeggedRobot(BaseTask):
         self.height_samples = None
         self.debug_viz = False
         self.init_done = False
+        self.status_warmup = 'moving'
         self._parse_cfg(self.cfg)
         super().__init__(self.cfg, sim_params, physics_engine, sim_device, headless)
         if not self.headless:
@@ -114,7 +115,7 @@ class LeggedRobot(BaseTask):
         """ Reset all robots"""
         self.reset_idx(torch.arange(self.num_envs, device=self.device))
         obs, privileged_obs, _, _, _ = self.step(torch.zeros(
-            self.num_envs, self.num_actions, device=self.device, requires_grad=False))
+            self.num_envs, self.num_actions, device=self.device, requires_grad=False), 'moving')
         return obs, privileged_obs
     
     def post_physics_step(self):
@@ -327,10 +328,7 @@ class LeggedRobot(BaseTask):
         Args:
             env_ids (List[int]): Environments ids for which new commands are needed
         """
-        # if random.random() < 11:# and self.cfg.commands.standing_command:
-        #     self.commands[env_ids, 0] = 0
-        #     self.commands[env_ids, 1] = 0
-        # else:
+        #else:
         self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         
@@ -341,12 +339,17 @@ class LeggedRobot(BaseTask):
 
         # set small commands to zero
         self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)
-        self.commands[env_ids, 3] = 0
-        self.commands[env_ids, 2] = 0
-        self.commands[env_ids, 0] = 0
-        self.commands[env_ids, 1] = 0
-        absolute_vel_commands =  torch.sqrt(self.commands[:,0]**2 + self.commands[:,1]**2)
 
+        # set commands to zero for standing 
+        # if random.random() < -0.1 and self.cfg.commands.standing_command:
+        #     self.commands[env_ids, 0] = 0
+        #     self.commands[env_ids, 1] = 0
+        #     self.commands[env_ids, 3] = 0
+        #     self.commands[env_ids, 2] = 0
+        if self.status == 'standing':
+            self.commands[:, :3] = 0
+
+        absolute_vel_commands =  torch.sqrt(self.commands[:,0]**2 + self.commands[:,1]**2)
         self.moving_idx = torch.nonzero(torch.gt(absolute_vel_commands, 0)).squeeze()
         self.standing_idx = torch.nonzero(torch.eq(absolute_vel_commands, 0)).squeeze()
         # print('standing_idx')
@@ -926,7 +929,7 @@ class LeggedRobot(BaseTask):
         """
         joint_diff = self.dof_pos - self.default_joint_pd_target
         left_yaw_roll = joint_diff[:, :2]
-        right_yaw_roll = joint_diff[:, 6: 8]
+        right_yaw_roll = joint_diff[:, 5: 7]
         yaw_roll = torch.norm(left_yaw_roll, dim=1) + torch.norm(right_yaw_roll, dim=1)
         yaw_roll = torch.clamp(yaw_roll - 0.1, 0, 50)
         return torch.exp(-yaw_roll * 100) - 0.01 * torch.norm(joint_diff, dim=1)

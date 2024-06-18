@@ -28,7 +28,7 @@
 # Copyright (c) 2024 Beijing RobotEra TECHNOLOGY CO.,LTD. All rights reserved.
 
 
-from humanoid.envs.base.legged_robot_config import LeggedRobotCfg
+from humanoid.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
 from isaacgym.torch_utils import *
 from isaacgym import gymtorch, gymapi
@@ -77,6 +77,7 @@ class XBotLFreeEnv(LeggedRobot):
     def __init__(self, cfg: LeggedRobotCfg, sim_params, physics_engine, sim_device, headless):
         super().__init__(cfg, sim_params, physics_engine, sim_device, headless)
         self.last_feet_z = 0.05
+        self.status = 'moving'
         self.feet_height = torch.zeros((self.num_envs, 2), device=self.device)
         self.reset_idx(torch.tensor(range(self.num_envs), device=self.device))
         self.compute_observations()
@@ -101,7 +102,7 @@ class XBotLFreeEnv(LeggedRobot):
     def  _get_phase(self):
         cycle_time = self.cfg.rewards.cycle_time
         time_scale = 1#torch.sqrt(self.commands[:,0]**2 + self.commands[:,1]**2) 
-        phase = self.episode_length_buf * self.dt * time_scale / cycle_time
+        phase = self.episode_length_buf * self.dt / cycle_time
         return phase
 
     def _get_gait_phase(self):
@@ -191,7 +192,8 @@ class XBotLFreeEnv(LeggedRobot):
         return noise_vec
 
 
-    def step(self, actions):
+    def step(self, actions, status_warmup):
+        self.status = status_warmup
         if self.cfg.env.use_ref_actions:
             actions += self.ref_action
         # dynamic randomization
@@ -211,7 +213,9 @@ class XBotLFreeEnv(LeggedRobot):
 
         stance_mask = self._get_gait_phase()
         contact_mask = self.contact_forces[:, self.feet_indices, 2] > 5.
-
+        #print('wwwww')
+        #print(self.status)
+    
         self.command_input = torch.cat(
             (sin_pos, cos_pos, self.commands[:, :3] * self.commands_scale), dim=1)
         
@@ -219,14 +223,14 @@ class XBotLFreeEnv(LeggedRobot):
         dq = self.dof_vel * self.obs_scales.dof_vel
         
         diff = self.dof_pos - self.ref_dof_pos
-        
+
         self.privileged_obs_buf = torch.cat((
             self.command_input,  # 2 + 3
             (self.dof_pos - self.default_joint_pd_target) * \
-            self.obs_scales.dof_pos,  # 12
-            self.dof_vel * self.obs_scales.dof_vel,  # 12
-            self.actions,  # 12
-            diff,  # 12
+            self.obs_scales.dof_pos,  # 10
+            self.dof_vel * self.obs_scales.dof_vel,  # 10
+            self.actions,  # 10
+            diff,  # 10
             self.base_lin_vel * self.obs_scales.lin_vel,  # 3
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
@@ -239,10 +243,10 @@ class XBotLFreeEnv(LeggedRobot):
         ), dim=-1)
 
         obs_buf = torch.cat((
-            self.command_input,  # 5 = 2D(sin cos) + 3D(vel_x, vel_y, aug_vel_yaw), # 12D
-            q,    # 12D
-            dq,  # 12D   
-            self.actions,
+            self.command_input,  # 5 = 2D(sin cos) + 3D(vel_x, vel_y, aug_vel_yaw), 
+            q,    # 10D
+            dq,  # 10D   
+            self.actions, # 10D
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
         ), dim=-1)
@@ -252,8 +256,9 @@ class XBotLFreeEnv(LeggedRobot):
             self.privileged_obs_buf = torch.cat((self.privileged_obs_buf, heights), dim=-1)
         
         #if self.add_noise:  
-        #    obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[:-1] * self.cfg.noise.noise_level
+        #    obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[1:] * self.cfg.noise.noise_level
         #else:
+        #    obs_now = obs_buf.clone()
         obs_now = self.privileged_obs_buf.clone() #obs_buf.clone()
         obs_now = torch.cat((phase[:, None], obs_now.clone()), dim=-1)
         self.obs_history.append(obs_now)
@@ -262,6 +267,7 @@ class XBotLFreeEnv(LeggedRobot):
 
         obs_buf_all = torch.stack([self.obs_history[i]
                                    for i in range(self.obs_history.maxlen)], dim=1)  # N,T,K
+
         self.obs_buf = obs_buf_all.reshape(self.num_envs, -1)  # N, T*K
         self.privileged_obs_buf = torch.cat([self.critic_history[i] for i in range(self.cfg.env.c_frame_stack)], dim=1)
 
@@ -279,7 +285,6 @@ class XBotLFreeEnv(LeggedRobot):
         """
         joint_pos = self.dof_pos.clone()
         pos_target = self.ref_dof_pos.clone()
-        #pos_target = self.default_joint_pd_target.clone()
         diff = joint_pos - pos_target
         r = torch.exp(-2 * torch.norm(diff, dim=1)) - 0.2 * torch.norm(diff, dim=1).clamp(0, 0.5)
         return r
@@ -345,7 +350,8 @@ class XBotLFreeEnv(LeggedRobot):
         """
         contact = self.contact_forces[:, self.feet_indices, 2] > 5.
         stance_mask = self._get_gait_phase()
-        stance_mask[:] = 1
+        if self.status == 'standing':
+            stance_mask[:] = 1
         reward = torch.where(contact == stance_mask, 1, -0.3)
         return torch.mean(reward, dim=1)
 
@@ -384,7 +390,8 @@ class XBotLFreeEnv(LeggedRobot):
         of its feet when they are in contact with the ground.
         """
         stance_mask = self._get_gait_phase()
-        stance_mask[:] = 1
+        if self.status == 'standing':
+            stance_mask[:] = 1
         measured_heights = torch.sum(
             self.rigid_state[:, self.feet_indices, 2] * stance_mask, dim=1) / torch.sum(stance_mask, dim=1)
         base_height = self.root_states[:, 2] - (measured_heights - 0.05)

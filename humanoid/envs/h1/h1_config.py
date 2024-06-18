@@ -26,12 +26,12 @@ class H1RoughCfg( LeggedRobotCfg ):
         }
     
     class env(LeggedRobotCfg.env):
-        num_envs = 4000
+        num_envs = 2500
         frame_stack = 15
         c_frame_stack = 3
         num_single_obs = 66
         num_actions = 10
-        num_observations = num_single_obs #int(frame_stack * num_single_obs)#num_single_obs#int(frame_stack * num_single_obs)
+        num_observations = num_single_obs #int(frame_stack * num_single_obs) #int( num_single_obs)#num_single_obs#int(frame_stack * num_single_obs)
         num_teaching_observations = int(frame_stack * (num_single_obs-1))
         single_num_privileged_obs = 65
         num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
@@ -45,6 +45,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         resampling_time = 8.  # time before command are changed[s]
         heading_command = True  # if true: compute ang vel command from heading error
         curriculum = True
+        standing_command = 'moving'
 
         class ranges:
             lin_vel_x = [-1.0, 2.0]  # min max [m/s]
@@ -91,7 +92,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         decimation = 10
 
     class asset( LeggedRobotCfg.asset ):
-        file = '/home/ziluoding/humanoid-gym/resources/robots/h1/urdf/h1.urdf'
+        file = '/home/ps/humanoid-gym/resources/robots/h1/urdf/h1.urdf'
         name = "h1"
         foot_name = "ankle"
         penalize_contacts_on = ["hip", "knee"]
@@ -152,18 +153,18 @@ class H1RoughCfg( LeggedRobotCfg ):
             feet_air_time = -1*0.
             foot_slip = 0
             feet_distance = 2
-            knee_distance = 2
+            knee_distance =2
             # contact
             feet_contact_forces = -0.01 * 0
             # vel tracking
-            tracking_lin_vel = 1.2
-            tracking_ang_vel = 1.1
+            tracking_lin_vel = 1.2 
+            tracking_ang_vel = 1.1 
             vel_mismatch_exp = 0.5  # lin_z; ang x,y
             #low_speed = 0.2
             track_vel_hard = 0.5 * 1
             # base pos
             default_joint_pos = 0.5 * 0
-            orientation = 1. * 1 * 0
+            orientation = 1. * 1 * 0 
             base_height = 0.2 * 1
             base_acc = 0.2 * 1
             # energy
@@ -175,7 +176,7 @@ class H1RoughCfg( LeggedRobotCfg ):
 
 class H1RoughCfgPPO( LeggedRobotCfgPPO ):
     class policy( LeggedRobotCfgPPO.policy ):
-        teaching_model_path = '/home/ps/humanoid-gym/logs/h1/MLP_best/model_15000.pt'
+        teaching_model_path = '/home/ps/humanoid-gym/logs/h1/walk_trans_trimesh_best/model_26900.pt'
         # For LSTM only
         rnn_type = 'lstm'
         rnn_hidden_size = 512

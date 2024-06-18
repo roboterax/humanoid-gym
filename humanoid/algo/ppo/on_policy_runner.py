@@ -38,6 +38,7 @@ from collections import deque
 from datetime import datetime
 from .ppo import PPO
 from .actor_critic import ActorCritic, Teaching_ActorCritic
+from .actor_critic_recurrent import ActorCriticRecurrent
 from humanoid.algo.vec_env import VecEnv
 from torch.utils.tensorboard import SummaryWriter
 
@@ -63,32 +64,55 @@ class OnPolicyRunner:
             num_critic_obs = self.env.num_privileged_obs
         else:
             num_critic_obs = self.env.num_obs
-        actor_critic_class = eval(self.cfg["policy_class_name"])  # ActorCritic
-        actor_critic: ActorCritic = actor_critic_class(
-            self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
-        ).to(self.device)
-
-        teaching_actorCritic = None
+        print(self.policy_cfg["architecture"])
+        if self.policy_cfg["architecture"] == 'RNN':
+            actor_critic_class = eval('ActorCriticRecurrent')  # ActorCritic
+            actor_critic: ActorCriticRecurrent = actor_critic_class(
+                self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
+            ).to(self.device)
+        else:
+            actor_critic_class = eval('ActorCritic')  # ActorCritic
+            actor_critic: ActorCritic = actor_critic_class(
+                self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
+            ).to(self.device)
 
         if self.policy_cfg["architecture"] == 'Mix':
-            teaching_actorCritic = Teaching_ActorCritic(self.env.num_obs, self.env.num_teaching_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg)
+            self.teaching_actorcritic = Teaching_ActorCritic(self.env.num_obs, self.env.num_teaching_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg)
             print('Loading Pretrained Teaching Model')
-            #teaching_actorCritic.load_state_dict(torch.load(self.policy_cfg["teaching_model_path"])["model_state_dict"])
+            self.teaching_actorcritic.load_state_dict(torch.load(self.policy_cfg["teaching_model_path"])["model_state_dict"])
             print('Pretrained Teaching Model Loaded')
+        else:
+            self.teaching_actorcritic = None
+
+        actor_critic_class = eval('ActorCritic') 
+        self.teaching_actorcritic: ActorCritic = actor_critic_class(
+                self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
+            ).to(self.device)
+        self.teaching_actorcritic.load_state_dict(torch.load(self.policy_cfg["teaching_model_path"], map_location='cuda:0')["model_state_dict"])
 
         alg_class = eval(self.cfg["algorithm_class_name"])  # PPO
-        self.alg: PPO = alg_class(actor_critic, teaching_actorCritic, device=self.device, **self.alg_cfg)
+        self.alg: PPO = alg_class(actor_critic, self.teaching_actorcritic, device=self.device, **self.alg_cfg)
         self.num_steps_per_env = self.cfg["num_steps_per_env"]
         self.save_interval = self.cfg["save_interval"]
 
         # init storage and model
-        self.alg.init_storage(
-            self.env.num_envs,
-            self.num_steps_per_env,
-            [int(self.env.num_obs * self.env.frame_stack)],
-            [self.env.num_privileged_obs],
-            [self.env.num_actions],
-        )
+        if self.policy_cfg['architecture'] == 'Mix' or self.policy_cfg['architecture'] == 'Trans':
+            self.alg.init_storage(
+                self.env.num_envs,
+                self.num_steps_per_env,
+                [int(self.env.num_obs) * self.env.frame_stack],
+                [self.env.num_privileged_obs],
+                [self.env.num_actions],
+            )
+        else: 
+            self.alg.init_storage(
+                self.env.num_envs,
+                self.num_steps_per_env,
+                [int(self.env.num_obs)],
+                [self.env.num_privileged_obs],
+                [self.env.num_actions],
+            )
+        self.num_steps_warmup = 25
 
         # Log
         self.log_dir = log_dir
@@ -96,7 +120,6 @@ class OnPolicyRunner:
         self.tot_timesteps = 0
         self.tot_time = 0
         self.current_learning_iteration = 0
-
         _, _ = self.env.reset()
 
     def learn(self, num_learning_iterations, init_at_random_ep_len=False):
@@ -118,6 +141,7 @@ class OnPolicyRunner:
         critic_obs = privileged_obs if privileged_obs is not None else obs
         obs, critic_obs = obs.to(self.device), critic_obs.to(self.device)
         self.alg.actor_critic.train()  # switch to train mode (for dropout for example)
+        #self.teaching_actorcritic.test()
 
         ep_infos = []
         rewbuffer = deque(maxlen=100)
@@ -132,17 +156,20 @@ class OnPolicyRunner:
         tot_iter = self.current_learning_iteration + num_learning_iterations
         for it in range(self.current_learning_iteration, tot_iter):
             start = time.time()
-
             # Rollout
-            # if it != 0 and it % 250 == 0:
-            #     self.alg.imitation_coef /= 1.5
-            #     if self.alg.imitation_coef < 2:
-            #         self.alg.min_learning_rate = 1e-5
-
             with torch.inference_mode():
+                #print(self.policy_cfg["policy_type"])
+                for i in range(self.num_steps_warmup):
+                     #actions = self.alg.act(obs, critic_obs)
+                     actions = self.teaching_actorcritic.act(obs).detach()
+                     obs, privileged_obs, rewards, dones, infos = self.env.step(actions, "moving") 
+                     critic_obs = privileged_obs if privileged_obs is not None else obs
+
+                self.policy_cfg["policy_type"] = 'standing'
+                                 
                 for i in range(self.num_steps_per_env):
                     actions = self.alg.act(obs, critic_obs)
-                    obs, privileged_obs, rewards, dones, infos = self.env.step(actions)
+                    obs, privileged_obs, rewards, dones, infos = self.env.step(actions, "standing")
                     critic_obs = privileged_obs if privileged_obs is not None else obs
                     obs, critic_obs, rewards, dones = (
                         obs.to(self.device),
@@ -167,6 +194,8 @@ class OnPolicyRunner:
                         )
                         cur_reward_sum[new_ids] = 0
                         cur_episode_length[new_ids] = 0
+
+                self.policy_cfg["policy_type"] = 'moving'
 
                 stop = time.time()
                 collection_time = stop - start
