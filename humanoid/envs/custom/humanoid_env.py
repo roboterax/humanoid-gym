@@ -250,10 +250,10 @@ class XBotLFreeEnv(LeggedRobot):
             heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
             self.privileged_obs_buf = torch.cat((self.privileged_obs_buf, heights), dim=-1)
         
-        if self.add_noise:  
-            obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[:-1] * self.cfg.noise.noise_level
-        else:
-            obs_now = obs_buf.clone()
+        #if self.add_noise:  
+        #    obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[:-1] * self.cfg.noise.noise_level
+        #else:
+        obs_now = self.privileged_obs_buf.clone() #obs_buf.clone()
         obs_now = torch.cat((phase[:, None], obs_now.clone()), dim=-1)
         self.obs_history.append(obs_now)
 
@@ -273,13 +273,13 @@ class XBotLFreeEnv(LeggedRobot):
             self.critic_history[i][env_ids] *= 0
 
 # ================================================ Rewards ================================================== #
-     def _reward_joint_pos(self):
+    def _reward_joint_pos(self):
         """
         Calculates the reward based on the difference between the current joint positions and the target joint positions.
         """
         joint_pos = self.dof_pos.clone()
         pos_target = self.ref_dof_pos.clone()
-        pos_target = self.default_joint_pd_target.clone()
+        #pos_target = self.default_joint_pd_target.clone()
         diff = joint_pos - pos_target
         r = torch.exp(-2 * torch.norm(diff, dim=1)) - 0.2 * torch.norm(diff, dim=1).clamp(0, 0.5)
         return r

@@ -26,10 +26,10 @@ class H1RoughCfg( LeggedRobotCfg ):
         }
     
     class env(LeggedRobotCfg.env):
-        num_envs = 2000
+        num_envs = 4000
         frame_stack = 15
         c_frame_stack = 3
-        num_single_obs = 42
+        num_single_obs = 66
         num_actions = 10
         num_observations = num_single_obs #int(frame_stack * num_single_obs)#num_single_obs#int(frame_stack * num_single_obs)
         num_teaching_observations = int(frame_stack * (num_single_obs-1))
@@ -57,7 +57,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         friction_range = [0.1, 2.0]
         randomize_base_mass = True
         added_mass_range = [-5., 5.]
-        push_robots = False
+        push_robots = True
         push_interval_s = 4
         max_push_vel_xy = 0.5
         max_push_ang_vel = 0.4
