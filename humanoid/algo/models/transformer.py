@@ -102,6 +102,7 @@ class GatedTransformerXL(nn.Module):
         self.linear_embedding  = nn.Linear(input_dim, self.embed_dim)
         nn.init.orthogonal_(self.linear_embedding.weight, np.sqrt(2))
         self.pos_embedding     = SinusoidalPE(dim = self.embed_dim)(self.max_episode_steps)
+        self.pos_embedding     = nn.Embedding(self.max_episode_steps, self.embed_dim)
         
         # Instantiate transformer blocks
         self.transformer_blocks = nn.ModuleList([
@@ -128,7 +129,8 @@ class GatedTransformerXL(nn.Module):
         #pos_embedding = self.pos_embedding[memory_indices.long()]
         #memories = memories + pos_embedding.unsqueeze(2)
         #pos_embedding = self.pos_embedding[h_indices.long()].cuda()
-        h = h #+ pos_embedding
+        pos_embedding = self.pos_embedding(h_indices.long()).cuda()
+        h = h + pos_embedding
         # Forward transformer blocks
         out_memories = []
         for i, block in enumerate(self.transformer_blocks):
