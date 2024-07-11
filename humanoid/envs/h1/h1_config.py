@@ -100,7 +100,8 @@ class H1RoughCfg( LeggedRobotCfg ):
         flip_visual_attachments = False
   
     class rewards:
-        base_height_target = 0.89
+        soft_dof_pos_limit = 0.9
+        base_height_target = 0.98
         min_dist = 0.2
         max_dist = 0.5
         # put some settings here for LLM parameter tuning
