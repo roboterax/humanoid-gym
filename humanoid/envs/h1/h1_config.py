@@ -31,7 +31,7 @@ class H1RoughCfg( LeggedRobotCfg ):
         c_frame_stack = 3
         num_single_obs = 66
         num_actions = 10
-        num_observations = num_single_obs #int(frame_stack * num_single_obs)#num_single_obs#int(frame_stack * num_single_obs)
+        num_observations = num_single_obs # int(frame_stack * num_single_obs) for MLP 
         num_teaching_observations = int(frame_stack * (num_single_obs-1))
         single_num_privileged_obs = 65
         num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
@@ -188,6 +188,7 @@ class H1RoughCfg( LeggedRobotCfg ):
 
 class H1RoughCfgPPO( LeggedRobotCfgPPO ):
     class policy( LeggedRobotCfgPPO.policy ):
+        policy_type = 'moving'
         teaching_model_path = '/home/ps/humanoid-gym/logs/h1/MLP_best/model_15000.pt'
         # For LSTM only
         rnn_type = 'lstm'

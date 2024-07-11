@@ -327,21 +327,34 @@ class XBotLFreeEnv(LeggedRobot):
         rew *= contact
         return torch.sum(rew, dim=1)    
 
+    # def _reward_feet_air_time(self):
+    #     """
+    #     Calculates the reward for feet air time, promoting longer steps. This is achieved by
+    #     checking the first contact with the ground after being in the air. The air time is
+    #     limited to a maximum value for reward calculation.
+    #     """
+    #     contact = self.contact_forces[:, self.feet_indices, 2] > 5.
+    #     stance_mask = self._get_gait_phase()
+    #     self.contact_filt = torch.logical_or(torch.logical_or(contact, stance_mask), self.last_contacts)
+    #     self.last_contacts = contact
+    #     first_contact = (self.feet_air_time > 0.) * self.contact_filt
+    #     self.feet_air_time += self.dt
+    #     air_time = self.feet_air_time.clamp(0, 0.5) * first_contact
+    #     self.feet_air_time *= ~self.contact_filt
+    #     return air_time.sum(dim=1)
+
     def _reward_feet_air_time(self):
-        """
-        Calculates the reward for feet air time, promoting longer steps. This is achieved by
-        checking the first contact with the ground after being in the air. The air time is
-        limited to a maximum value for reward calculation.
-        """
-        contact = self.contact_forces[:, self.feet_indices, 2] > 5.
-        stance_mask = self._get_gait_phase()
-        self.contact_filt = torch.logical_or(torch.logical_or(contact, stance_mask), self.last_contacts)
+        # Reward long steps
+        # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
+        contact = self.contact_forces[:, self.feet_indices, 2] > 1.
+        contact_filt = torch.logical_or(contact, self.last_contacts) 
         self.last_contacts = contact
-        first_contact = (self.feet_air_time > 0.) * self.contact_filt
+        first_contact = (self.feet_air_time > 0.) * contact_filt
         self.feet_air_time += self.dt
-        air_time = self.feet_air_time.clamp(0, 0.5) * first_contact
-        self.feet_air_time *= ~self.contact_filt
-        return air_time.sum(dim=1)
+        rew_airTime = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1) # reward only on first contact with the ground
+        rew_airTime *= torch.norm(self.commands[:, :2], dim=1) > 0.1 #no reward for zero command
+        self.feet_air_time *= ~contact_filt
+        return rew_airTime
 
     def _reward_feet_contact_number(self):
         """
@@ -363,13 +376,6 @@ class XBotLFreeEnv(LeggedRobot):
         quat_mismatch = torch.exp(-torch.sum(torch.abs(self.base_euler_xyz[:, :2]), dim=1) * 10)
         orientation = torch.exp(-torch.norm(self.projected_gravity[:, :2], dim=1) * 20)
         return (quat_mismatch + orientation) / 2.
-
-    def _reward_feet_contact_forces(self):
-        """
-        Calculates the reward for keeping contact forces within a specified range. Penalizes
-        high contact forces on the feet.
-        """
-        return torch.sum((torch.norm(self.contact_forces[:, self.feet_indices, :], dim=-1) - self.cfg.rewards.max_contact_force).clip(0, 400), dim=1)
 
     def _reward_default_joint_pos(self):
         """
@@ -396,6 +402,11 @@ class XBotLFreeEnv(LeggedRobot):
             self.rigid_state[:, self.feet_indices, 2] * stance_mask, dim=1) / torch.sum(stance_mask, dim=1)
         base_height = self.root_states[:, 2] - (measured_heights - 0.05)
         return torch.exp(-torch.abs(base_height - self.cfg.rewards.base_height_target) * 100)
+
+    # def _reward_base_height(self):
+    #     # Penalize base height away from target
+    #     base_height = self.root_states[:, 2]
+    #     return torch.square(base_height - self.cfg.rewards.base_height_target)
 
     def _reward_base_acc(self):
         """
@@ -552,3 +563,32 @@ class XBotLFreeEnv(LeggedRobot):
             self.actions + self.last_last_actions - 2 * self.last_actions), dim=1)
         term_3 = 0.05 * torch.sum(torch.abs(self.actions), dim=1)
         return term_1 + term_2 + term_3
+
+    def _reward_stumble(self):
+        # Penalize feet hitting vertical surfaces
+        return torch.any(torch.norm(self.contact_forces[:, self.feet_indices, :2], dim=2) >\
+             5 *torch.abs(self.contact_forces[:, self.feet_indices, 2]), dim=1)
+
+    def _reward_stand_still(self):
+        # Penalize motion at zero commands
+        return torch.sum(torch.abs(self.dof_pos - self.default_dof_pos), dim=1) * (torch.norm(self.commands[:, :2], dim=1) < 0.1)
+
+    def _reward_feet_contact_forces(self):
+        """
+        Calculates the reward for keeping contact forces within a specified range. Penalizes
+        high contact forces on the feet.
+        """
+        return torch.sum((torch.norm(self.contact_forces[:, self.feet_indices, :], dim=-1) - self.cfg.rewards.max_contact_force).clip(0, 400), dim=1)
+
+    def _reward_action_rate(self):
+        # Penalize changes in actions
+        return torch.sum(torch.square(self.last_actions - self.actions), dim=1)
+
+    def _reward_lin_vel_z(self):
+        # Penalize z axis base linear velocity
+        return torch.square(self.base_lin_vel[:, 2])
+    
+    def _reward_ang_vel_xy(self):
+        # Penalize xy axes base angular velocity
+        return torch.sum(torch.square(self.base_ang_vel[:, :2]), dim=1)
+
