@@ -747,15 +747,7 @@ class LeggedRobot(BaseTask):
             body_props = self.gym.get_actor_rigid_body_properties(env_handle, actor_handle)
             body_props = self._process_rigid_body_props(body_props, i)
 
-            # FIXME: (is2ac) temporary hack to fix the mass of the robot
-            for j, prop in enumerate(body_props):
-                if abs(prop.mass) > 1e-5:
-                    prop.mass = 1e-7
-                prop.mass = prop.mass * 1e7
-            # FIXME
-
-            self.gym.set_actor_rigid_body_properties(env_handle, actor_handle, body_props, recomputeInertia=True)
-
+            self.gym.set_actor_rigid_body_properties(env_handle, actor_handle, body_props, recomputeInertia=False)
             self.envs.append(env_handle)
             self.actor_handles.append(actor_handle)
 
