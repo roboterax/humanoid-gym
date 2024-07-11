@@ -746,16 +746,15 @@ class LeggedRobot(BaseTask):
             self.gym.set_actor_dof_properties(env_handle, actor_handle, dof_props)
             body_props = self.gym.get_actor_rigid_body_properties(env_handle, actor_handle)
             body_props = self._process_rigid_body_props(body_props, i)
-
             # FIXME: (is2ac) temporary hack to fix the mass of the robot
-            for j, prop in enumerate(body_props):
-                if abs(prop.mass) > 1e-5:
-                    prop.mass = 1e-7
-                prop.mass = prop.mass * 1e7
+            # for j, prop in enumerate(body_props):
+            #     if abs(prop.mass) > 1e-5:
+            #         prop.mass = 1e-7
+            #     prop.mass = 1e-7
+            #     prop.mass = prop.mass * 1e7
             # FIXME
 
-            self.gym.set_actor_rigid_body_properties(env_handle, actor_handle, body_props, recomputeInertia=True)
-
+            self.gym.set_actor_rigid_body_properties(env_handle, actor_handle, body_props, recomputeInertia=False)
             self.envs.append(env_handle)
             self.actor_handles.append(actor_handle)
 
@@ -770,6 +769,7 @@ class LeggedRobot(BaseTask):
             print(f"  Body {j} mass: {prop.mass}")
             # prop.mass = prop.mass * 1e7
             print(f" Body {j} inertia: {prop.inertia.x}, {prop.inertia.y}, {prop.inertia.z}")
+            # For prop.inertia.x
 
         self.knee_indices = torch.zeros(len(knee_names), dtype=torch.long, device=self.device, requires_grad=False)
         for i in range(len(knee_names)):
