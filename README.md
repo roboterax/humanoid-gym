@@ -1,3 +1,43 @@
+# Some key arguments 
+
+## legged_robot_config
+
+### LeggedRobotCfg
+
+* terrain.mesh_type = 'trimesh' for complicated terrain
+
+* terrain.terrain_proportions = [0.3, 0.2, 0.2, 0.1, 0.1, 0.05, 0.05]
+
+## h1_config
+
+### H1RoughCfg
+
+* env.num_single_obs = 66 # 66 for global state, and 42 for obs
+
+* domain_rand.randomize_friction, randomize_base_mass, push_robots, and noise.add_noise are set to False at the first stage
+
+### H1RoughCfgPPO
+
+* policy.architecture = 'Trans' # choose from 'Mix', 'Trans', 'MLP'
+'Mix' means imitation learning + RL learning, policy.teaching_model_path should be set. 
+if 'MLP', set H1RoughCfg.env.num_observations to int(frame_stack * num_single_obs)
+
+* policy.policy_type = 'moving' # standing, moving, and steering
+moving_model_path should be set if policy_type is standing.
+
+* algorithm.max_grad_norm can be reduced if the training is unstable
+
+
+# Training procudure
+
+1. state + no randomize and no noise
+2. state + randomize and noise by distilling
+3. obs + randomize and noise by distilling
+4. tran -> mlp by distilling
+
+Some steps can be merged.
+
+
 # Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer
 
 **[[Paper]](https://arxiv.org/abs/2404.05695)**

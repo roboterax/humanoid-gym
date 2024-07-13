@@ -89,7 +89,7 @@ class OnPolicyRunner:
             self.moving_actorcritic: ActorCritic = actor_critic_class(
                     self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
                 ).to(self.device)
-            self.moving_actorcritic.load_state_dict(torch.load(self.policy_cfg["teaching_model_path"], map_location='cuda:0')["model_state_dict"])
+            self.moving_actorcritic.load_state_dict(torch.load(self.policy_cfg["moving_model_path"], map_location='cuda:0')["model_state_dict"])
         else:
             self.moving_actorcritic = None
 
@@ -164,17 +164,13 @@ class OnPolicyRunner:
                 #print(self.policy_cfg["policy_type"])
                 if self.policy_cfg['policy_type'] == "standing":
                     for i in range(self.num_steps_warmup):
-                        #actions = self.alg.act(obs, critic_obs)
                         actions = self.moving_actorcritic.act(obs).detach()
                         obs, privileged_obs, rewards, dones, infos = self.env.step(actions, "moving") 
                         critic_obs = privileged_obs if privileged_obs is not None else obs
-                    policy_type = 'standing'
-                else: 
-                    policy_type = 'moving'
                                  
                 for i in range(self.num_steps_per_env):
                     actions = self.alg.act(obs, critic_obs)
-                    obs, privileged_obs, rewards, dones, infos = self.env.step(actions, policy_type)
+                    obs, privileged_obs, rewards, dones, infos = self.env.step(actions, self.policy_cfg['policy_type'])
                     critic_obs = privileged_obs if privileged_obs is not None else obs
                     obs, critic_obs, rewards, dones = (
                         obs.to(self.device),

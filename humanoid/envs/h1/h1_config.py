@@ -29,7 +29,8 @@ class H1RoughCfg( LeggedRobotCfg ):
         num_envs = 1500
         frame_stack = 40
         c_frame_stack = 3
-        num_single_obs = 66
+        num_single_obs = 66 # 66 for global state, and 42 for obs
+        use_privileged_obs = True
         num_actions = 10
         num_observations = num_single_obs # int(frame_stack * num_single_obs) for MLP 
         num_teaching_observations = int(frame_stack * (num_single_obs-1))
@@ -116,12 +117,12 @@ class H1RoughCfg( LeggedRobotCfg ):
 
         class scales:
             # reference motion tracking
-            # joint_pos = 1.6
-            # feet_clearance = 1.
-            # feet_contact_number = 1.2
+            joint_pos = 1.6
+            feet_clearance = 1.
+            feet_contact_number = 1.2
             # # gait
-            # feet_air_time = 1.
-            # foot_slip = -0.05
+            feet_air_time = 1.
+            foot_slip = -0.05
             # feet_distance = 1
             # knee_distance = 1
             # # contact
@@ -134,8 +135,8 @@ class H1RoughCfg( LeggedRobotCfg ):
             # track_vel_hard = 0.5
             # # base pos
             # default_joint_pos = 0.5
-            # orientation = 1.
-            # base_height = 0.2
+            orientation = 1.
+            base_height = 0.2
             # base_acc = 0.2
             # # energy
             # action_smoothness = -0.002
@@ -148,10 +149,10 @@ class H1RoughCfg( LeggedRobotCfg ):
             tracking_ang_vel = 0.5
             lin_vel_z = -2.0
             ang_vel_xy = -1.0
-            orientation = -1.0
-            base_height = -100.0
+            #orientation = -1.0
+            #base_height = -100.0
             dof_acc = -3.5e-8
-            feet_air_time = 1.0
+            #feet_air_time = 1.0
             collision = 0.0
             action_rate = -0.01
             torques = 0.0
@@ -187,19 +188,78 @@ class H1RoughCfg( LeggedRobotCfg ):
             dof_acc = -1e-4
             collision = -1.
 
+    class normalization:
+        class obs_scales:
+            lin_vel = 2.0
+            ang_vel = 0.25
+            dof_pos = 1.0
+            dof_vel = 0.05
+            quat = 1.
+            height_measurements = 5.0
+        clip_observations = 100.
+        clip_actions = 100.
+
+    class noise:
+        add_noise = False
+        noise_level = 1.0 # scales other values
+        class noise_scales:
+            dof_pos = 0.01
+            dof_vel = 1.5
+            lin_vel = 0.1
+            ang_vel = 0.2
+            gravity = 0.05
+            quat = 0.03
+            height_measurements = 0.1
+
+
 class H1RoughCfgPPO( LeggedRobotCfgPPO ):
     class policy( LeggedRobotCfgPPO.policy ):
-        policy_type = 'moving'
+        policy_type = 'moving' # standing, moving, and steering
+        architecture = 'Trans' # choose from 'Mix', 'Trans', 'MLP', and 'RNN'
         teaching_model_path = '/home/ps/humanoid-gym/logs/h1/MLP_best/model_15000.pt'
+        moving_model_path = '/home/ps/humanoid-gym/logs/h1/MLP_best/model_15000.pt'
+        init_noise_std = 1.0
+        actor_hidden_dims = [512, 256, 128]
+        critic_hidden_dims = [512, 256, 128]
         # For LSTM only
         rnn_type = 'lstm'
         rnn_hidden_size = 512
         rnn_num_layers = 1
+        
     class algorithm( LeggedRobotCfgPPO.algorithm ):
+        # training params
+        value_loss_coef = 1.0
+        use_clipped_value_loss = True
+        use_imitation_loss = True
+        clip_param = 0.2
         entropy_coef = 0.01
+        imitation_coef = 100.0
+        num_learning_epochs = 5
+        num_mini_batches = 4 # mini batch size = num_envs*nsteps / nminibatches
+        learning_rate = 1.e-3 #5.e-4
+        schedule = 'adaptive' # could be adaptive, fixed
+        gamma = 0.99
+        lam = 0.95
+        desired_kl = 0.01
+        max_grad_norm = 0.2
+
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
         experiment_name = 'h1'
         policy_class_name = 'ActorCritic'
+        algorithm_class_name = 'PPO'
+        num_steps_per_env = 24 # per iteration
+        max_iterations = 50000 # number of policy updates
+
+        # logging
+        save_interval = 1000 # check for potential saves every this many iterations
+        experiment_name = 'test'
+        run_name = ''
+        # load and resume
+        resume = False
+        load_run = -1 # -1 = last run
+        checkpoint = -1 # -1 = last saved model
+        resume_path = None # updated from load_run and chkpt
+
 
   

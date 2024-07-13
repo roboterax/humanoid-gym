@@ -255,12 +255,15 @@ class XBotLFreeEnv(LeggedRobot):
             heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
             self.privileged_obs_buf = torch.cat((self.privileged_obs_buf, heights), dim=-1)
         
-        #if self.add_noise:  
-        #    obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[1:] * self.cfg.noise.noise_level
-        #else:
-        #    obs_now = obs_buf.clone()
-        obs_now = self.privileged_obs_buf.clone() #obs_buf.clone()
+        if self.add_noise:  
+            obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec[:-1] * self.cfg.noise.noise_level
+        else:
+            obs_now = obs_buf.clone()
+
+        if self.cfg.env.use_privileged_obs:
+            obs_now = self.privileged_obs_buf.clone()
         obs_now = torch.cat((phase[:, None], obs_now.clone()), dim=-1)
+
         self.obs_history.append(obs_now)
 
         self.critic_history.append(self.privileged_obs_buf)
