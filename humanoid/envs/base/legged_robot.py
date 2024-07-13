@@ -225,8 +225,11 @@ class LeggedRobot(BaseTask):
 
         for i in range(len(self.reward_functions)):
             name = self.reward_names[i]
-            rew = self.reward_functions[i]() 
-            rew = rew * self.standing_reward_scales[name]
+            rew = self.reward_functions[i]()
+            if self.status == 'standing': 
+                rew = rew * self.standing_reward_scales[name]
+            else:
+                rew = rew * self.reward_scales[name]
             #rew[self.moving_idx] = rew[self.moving_idx] * self.reward_scales[name]
             #rew[self.standing_idx] = rew[self.standing_idx] * self.standing_reward_scales[name]
             self.rew_buf += rew
