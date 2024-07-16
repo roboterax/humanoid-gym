@@ -34,16 +34,19 @@ import os
 from collections import deque
 
 import numpy as np
-import torch
+
+# fmt: off
+from isaacgym import gymapi, gymtorch, gymutil # isort: skip
+from isaacgym.torch_utils import * # isort: skip
+import torch # isort: skip
+# fmt: on
+
 from humanoid import LEGGED_GYM_ROOT_DIR
 from humanoid.envs.base.base_task import BaseTask
 from humanoid.utils.helpers import class_to_dict
 
 # from humanoid.utils.terrain import Terrain
 from humanoid.utils.math import quat_apply_yaw, wrap_to_pi
-
-from isaacgym import gymapi, gymtorch, gymutil
-from isaacgym.torch_utils import *
 
 from .legged_robot_config import LeggedRobotCfg
 
@@ -710,7 +713,6 @@ class LeggedRobot(BaseTask):
         termination_contact_names = []
         for name in self.cfg.asset.terminate_after_contacts_on:
             termination_contact_names.extend([s for s in body_names if name in s])
-
         base_init_state_list = (
             self.cfg.init_state.pos
             + self.cfg.init_state.rot
@@ -756,7 +758,7 @@ class LeggedRobot(BaseTask):
             self.feet_indices[i] = self.gym.find_actor_rigid_body_handle(
                 self.envs[0], self.actor_handles[0], feet_names[i]
             )
-
+        print("feet", self.feet_indices)
         print(f"Processed body properties for env {i}:")
         for j, prop in enumerate(body_props):
             print(f"  Body {j} mass: {prop.mass}")
