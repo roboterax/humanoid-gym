@@ -1,12 +1,17 @@
-# Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer
-
-**[[Paper]](https://arxiv.org/abs/2404.05695)**
-**[[Project Page]](https://sites.google.com/view/humanoid-gym/)**
 **[[简体中文]](./README_CH.md)**
+# <a href="https://sites.google.com/view/humanoid-gym/">Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer</a>
+
+<a href="https://sites.google.com/view/humanoid-gym/"><strong>Project Page</strong></a>
+  |
+  <a href="https://arxiv.org/abs/2404.05695"><strong>arXiv</strong></a>
+  |
+  <a href="https://twitter.com/roboterax/status/1765038672641175662"><strong>Twitter</strong></a>
+
+  <a href="https://github.com/zlw21gxy">Xinyang Gu*</a>, 
+  <a href="https://wangyenjen.github.io/">Yen-Jen Wang*</a>,
+  <a href="http://people.iiis.tsinghua.edu.cn/~jychen/">Jianyu Chen</a>
 
 ![Demo](./images/demo.gif)
-
-Welcome to our Humanoid-Gym! 
 
 Humanoid-Gym is an easy-to-use reinforcement learning (RL) framework based on Nvidia Isaac Gym, designed to train locomotion skills for humanoid robots, emphasizing zero-shot transfer from simulation to the real-world environment. Humanoid-Gym also integrates a sim-to-sim framework from Isaac Gym to Mujoco that allows users to verify the trained policies in different physical simulations to ensure the robustness and generalization of the policies.
 
@@ -50,7 +55,7 @@ Denoising World Model Learning(DWL) presents an advanced sim-to-real framework t
    - Consult `isaacgym/docs/index.html` for troubleshooting.
 6. Install humanoid-gym:
    - Clone this repository.
-   - `cd humanoid_gym && pip install -e .`
+   - `cd humanoid-gym && pip install -e .`
 
 
 
@@ -100,7 +105,7 @@ python scripts/sim2sim.py --load_model /path/to/logs/XBot_ppo/exported/policies/
 - By default, the latest model of the last run from the experiment folder is loaded. However, other run iterations/models can be selected by adjusting `load_run` and `checkpoint` in the training config.
 
 #### 3. Sim-to-sim
-
+- **Please note: Before initiating the sim-to-sim process, ensure that you run `play.py` to export a JIT policy.**
 - **Mujoco-based Sim2Sim Deployment**: Utilize Mujoco for executing simulation-to-simulation (sim2sim) deployments with the command below:
   ```
   python scripts/sim2sim.py --load_model /path/to/export/model.pt
@@ -189,4 +194,4 @@ The implementation of Humanoid-Gym relies on resources from [legged_gym](https:/
 
 ## Any Questions?
 
-If you have further questions, please feel free to contact [support@robotera.com](mailto:support@robotera.com).
+If you have further questions, please feel free to contact [support@robotera.com](mailto:support@robotera.com) or create an issue in this repository.
