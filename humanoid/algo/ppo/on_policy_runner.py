@@ -253,7 +253,6 @@ class OnPolicyRunner:
         print(log_string)
 
     def save(self, path, infos=None):
-        # breakpoint()
         torch.save(
             {
                 "model_state_dict": self.alg.actor_critic.state_dict(),
@@ -262,13 +261,6 @@ class OnPolicyRunner:
                 "infos": infos,
             },
             path,
-        )
-        # Append _model_only to path before suffix
-        model_only_path = os.path.splitext(path)[0] + "_model_only" + os.path.splitext(path)[1]
-        torch.save(
-            # Save just the policy
-            self.alg.actor_critic.actor,
-            model_only_path,
         )
 
     def load(self, path, load_optimizer=True):

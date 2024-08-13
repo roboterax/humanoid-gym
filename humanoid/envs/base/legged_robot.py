@@ -134,11 +134,15 @@ class LeggedRobot(BaseTask):
         self.common_step_counter += 1
 
         # prepare quantities
-        self.base_quat[:] = self.root_states[:, 3:7]
+        # TODO(pfb30) - debug this
+        origin = torch.tensor(self.cfg.init_state.rot, device=self.device).repeat(self.num_envs, 1)
+        origin = quat_conjugate(origin)
+        self.base_quat[:] = quat_mul(origin, self.root_states[:, 3:7])
+        self.base_euler_xyz = get_euler_xyz_tensor(self.base_quat)
+
         self.base_lin_vel[:] = quat_rotate_inverse(self.base_quat, self.root_states[:, 7:10])
         self.base_ang_vel[:] = quat_rotate_inverse(self.base_quat, self.root_states[:, 10:13])
         self.projected_gravity[:] = quat_rotate_inverse(self.base_quat, self.gravity_vec)
-        self.base_euler_xyz = get_euler_xyz_tensor(self.base_quat)
 
         self._post_physics_step_callback()
 
@@ -218,7 +222,11 @@ class LeggedRobot(BaseTask):
             self.extras["time_outs"] = self.time_out_buf
 
         # fix reset gravity bug
-        self.base_quat[env_ids] = self.root_states[env_ids, 3:7]
+        # TODO(pfb30) - debug this
+        origin = torch.tensor(self.cfg.init_state.rot, device=self.device).repeat(self.num_envs, 1)
+        origin = quat_conjugate(origin)
+        self.base_quat[env_ids] = quat_mul(origin[env_ids,:], self.root_states[env_ids, 3:7])
+
         self.base_euler_xyz = get_euler_xyz_tensor(self.base_quat)
         self.projected_gravity[env_ids] = quat_rotate_inverse(self.base_quat[env_ids], self.gravity_vec[env_ids])
 
@@ -394,9 +402,8 @@ class LeggedRobot(BaseTask):
         Args:
             env_ids (List[int]): Environemnt ids
         """
-        self.dof_pos[env_ids] = self.default_dof_pos + torch_rand_float(
-            -0.1, 0.1, (len(env_ids), self.num_dof), device=self.device
-        )
+        # TODO(pfb30) - this should be steered by the config param
+        self.dof_pos[env_ids] = self.default_dof_pos + torch_rand_float(-0.1, 0.1, (len(env_ids), self.num_dof), device=self.device )
         self.dof_vel[env_ids] = 0.0
 
         env_ids_int32 = env_ids.to(dtype=torch.int32)
@@ -498,7 +505,11 @@ class LeggedRobot(BaseTask):
         self.dof_state = gymtorch.wrap_tensor(dof_state_tensor)
         self.dof_pos = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 0]
         self.dof_vel = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 1]
-        self.base_quat = self.root_states[:, 3:7]
+        # self.base_quat = self.root_states[:, 3:7] 
+        # TODO(pfb30): debug this      
+        origin = torch.tensor(self.cfg.init_state.rot, device=self.device).repeat(self.num_envs, 1)
+        origin = quat_conjugate(origin)
+        self.base_quat = quat_mul(origin, self.root_states[:, 3:7])
         self.base_euler_xyz = get_euler_xyz_tensor(self.base_quat)
 
         self.contact_forces = gymtorch.wrap_tensor(net_contact_forces).view(
@@ -509,6 +520,7 @@ class LeggedRobot(BaseTask):
         # initialize some data used later on
         self.common_step_counter = 0
         self.extras = {}
+
         self.noise_scale_vec = self._get_noise_scale_vec(self.cfg)
         self.gravity_vec = to_torch(get_axis_params(-1.0, self.up_axis_idx), device=self.device).repeat(
             (self.num_envs, 1)
@@ -836,7 +848,7 @@ class LeggedRobot(BaseTask):
         Default behaviour: draws height measurement points
         """
         # draw height lines
-        if not self.terrain.cfg.measure_heights:
+        if not self.cfg.terrain.measure_heights:
             return
         self.gym.clear_lines(self.viewer)
         self.gym.refresh_rigid_body_state_tensor(self.sim)
