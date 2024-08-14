@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-FileCopyrightText: Copyright (c) 2021 ETH Zurich, Nikita Rudin
 # SPDX-License-Identifier: BSD-3-Clause
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
@@ -29,15 +29,13 @@
 #
 # Copyright (c) 2024 Beijing RobotEra TECHNOLOGY CO.,LTD. All rights reserved.
 
-import os
 import copy
-import torch
-import numpy as np
+import os
 import random
-from isaacgym import gymapi
-from isaacgym import gymutil
 
-from humanoid import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
+import numpy as np
+import torch
+from isaacgym import gymapi, gymutil
 
 
 def class_to_dict(obj) -> dict:
@@ -65,7 +63,6 @@ def update_class_from_dict(obj, dict):
             update_class_from_dict(attr, val)
         else:
             setattr(obj, key, val)
-    return
 
 
 def set_seed(seed):
@@ -225,11 +222,15 @@ def get_args():
             "type": int,
             "help": "Maximum number of training iterations. Overrides config file if provided.",
         },
+        {
+            "name": "--log_h5",
+            "action": "store_true",
+            "default": False,
+            "help": "Enable HDF5 logging",
+        },
     ]
     # parse arguments
-    args = gymutil.parse_arguments(
-        description="RL Policy", custom_parameters=custom_parameters
-    )
+    args = gymutil.parse_arguments(description="RL Policy", custom_parameters=custom_parameters)
 
     # name allignment
     args.sim_device_id = args.compute_device_id
