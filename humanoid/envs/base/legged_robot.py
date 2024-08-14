@@ -403,7 +403,7 @@ class LeggedRobot(BaseTask):
             env_ids (List[int]): Environemnt ids
         """
         # TODO(pfb30) - this should be steered by the config param
-        self.dof_pos[env_ids] = self.default_dof_pos + torch_rand_float(-0.1, 0.1, (len(env_ids), self.num_dof), device=self.device )
+        self.dof_pos[env_ids] = self.default_dof_pos + torch_rand_float(-self.cfg.domain_rand.start_pos_noise, self.cfg.domain_rand.start_pos_noise, (len(env_ids), self.num_dof), device=self.device )
         self.dof_vel[env_ids] = 0.0
 
         env_ids_int32 = env_ids.to(dtype=torch.int32)
