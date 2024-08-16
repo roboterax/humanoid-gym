@@ -45,8 +45,8 @@ class XBotLCfg(LeggedRobotCfg):
         num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
         num_actions = 12
         num_envs = 4096
-        episode_length_s = 24  # episode length in seconds
-        use_ref_actions = False
+        episode_length_s = 24     # episode length in seconds
+        use_ref_actions = False   # speed up training by using reference actions
 
     class safety:
         # safety factors
@@ -129,14 +129,14 @@ class XBotLCfg(LeggedRobotCfg):
 
     class sim(LeggedRobotCfg.sim):
         dt = 0.001  # 1000 Hz
-        substeps = 1  # 2
+        substeps = 1
         up_axis = 1  # 0 is y, 1 is z
 
         class physx(LeggedRobotCfg.sim.physx):
             num_threads = 10
             solver_type = 1  # 0: pgs, 1: tgs
             num_position_iterations = 4
-            num_velocity_iterations = 0
+            num_velocity_iterations = 1
             contact_offset = 0.01  # [m]
             rest_offset = 0.0   # [m]
             bounce_threshold_velocity = 0.1  # [m/s]
@@ -155,7 +155,9 @@ class XBotLCfg(LeggedRobotCfg):
         push_interval_s = 4
         max_push_vel_xy = 0.2
         max_push_ang_vel = 0.4
-        dynamic_randomization = 0.02
+        # dynamic randomization
+        action_delay = 0.5
+        action_noise = 0.02
 
     class commands(LeggedRobotCfg.commands):
         # Vers: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
@@ -164,9 +166,9 @@ class XBotLCfg(LeggedRobotCfg):
         heading_command = True  # if true: compute ang vel command from heading error
 
         class ranges:
-            lin_vel_x = [-0.3, 0.6]  # min max [m/s]
+            lin_vel_x = [-0.3, 0.6]   # min max [m/s]
             lin_vel_y = [-0.3, 0.3]   # min max [m/s]
-            ang_vel_yaw = [-0.3, 0.3]    # min max [rad/s]
+            ang_vel_yaw = [-0.3, 0.3] # min max [rad/s]
             heading = [-3.14, 3.14]
 
     class rewards:
@@ -175,7 +177,7 @@ class XBotLCfg(LeggedRobotCfg):
         max_dist = 0.5
         # put some settings here for LLM parameter tuning
         target_joint_pos_scale = 0.17    # rad
-        target_feet_height = 0.06       # m
+        target_feet_height = 0.06        # m
         cycle_time = 0.64                # sec
         # if true negative total rewards are clipped at zero (avoids early termination problems)
         only_positive_rewards = True
