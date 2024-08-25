@@ -52,7 +52,11 @@ Denoising World Model Learning(DWL) presents an advanced sim-to-real framework t
 - **Enhanced Sim-to-real Adaptability**: Techniques to optimize the robot's transition from simulated to real environments.
 - **Improved State Estimation Capabilities**: Advanced tools for precise and reliable state analysis.
 
+### Perceptive Locomotion Learning for Humanoid Robots (Coming Soon!)
+<a href="https://x.com/roboterax/status/1798694054374564010"><strong>Twitter</strong></a>
+
 ### Dexterous Hand Manipulation (Coming Soon!)
+<a href="https://x.com/roboterax/status/1791349763448938924"><strong>Twitter</strong></a>
 
 ## Installation
 
