@@ -42,8 +42,8 @@ Our simulator settings, particularly with Mujoco, are finely tuned to closely mi
 <a href="https://wangyenjen.github.io/">Yen-Jen Wang*</a>,
 Xiang Zhu*, Chengming Shi*, Yanjiang Guo, Yichen Liu,
 <a href="http://people.iiis.tsinghua.edu.cn/~jychen/">Jianyu Chen†</a>
-*: Equal contribution. Project Co-lead.
-†: Corresponding Author.
+
+*: Equal contribution. Project Co-lead., †: Corresponding Author.
 
 Denoising World Model Learning(DWL) presents an advanced sim-to-real framework that integrates state estimation and system identification. This dual-method approach ensures the robot's learning and adaptation are both practical and effective in real-world contexts.
 
