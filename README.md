@@ -8,7 +8,9 @@
 
   <a href="https://github.com/zlw21gxy">Xinyang Gu*</a>, 
   <a href="https://wangyenjen.github.io/">Yen-Jen Wang*</a>,
-  <a href="http://people.iiis.tsinghua.edu.cn/~jychen/">Jianyu Chen</a>
+  <a href="http://people.iiis.tsinghua.edu.cn/~jychen/">Jianyu Chen†</a>
+
+  *: Equal contribution. Project Co-lead., †: Corresponding Author.
 
 ![Demo](./images/demo.gif)
 
