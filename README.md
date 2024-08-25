@@ -32,7 +32,17 @@ We also share our sim2sim pipeline, which allows you to transfer trained policie
 Our simulator settings, particularly with Mujoco, are finely tuned to closely mimic real-world scenarios. This careful calibration ensures that the performances in both simulated and real-world environments are closely aligned. This improvement makes our simulations more trustworthy and enhances our confidence in their applicability to real-world scenarios.
 
 
-### 3. Denoising World Model Learning (Coming Soon!)
+### 3. Denoising World Model Learning
+#### Robotics: Science and Systems (RSS), 2024 (Best Paper Award Finalist)
+<a href="https://enriquecoronadozu.github.io/rssproceedings2024/rss20/p058.pdf"><strong>Paper</strong></a>
+|
+<a href="https://x.com/wangyenjen/status/1792741940087394540"><strong>Twitter</strong></a>
+
+<a href="https://github.com/zlw21gxy">Xinyang Gu*</a>, 
+<a href="https://wangyenjen.github.io/">Yen-Jen Wang*</a>,
+Xiang Zhu, Chengming Shi, Yanjiang Guo, Yichen Liu,
+<a href="http://people.iiis.tsinghua.edu.cn/~jychen/">Jianyu Chen</a>
+
 Denoising World Model Learning(DWL) presents an advanced sim-to-real framework that integrates state estimation and system identification. This dual-method approach ensures the robot's learning and adaptation are both practical and effective in real-world contexts.
 
 - **Enhanced Sim-to-real Adaptability**: Techniques to optimize the robot's transition from simulated to real environments.
