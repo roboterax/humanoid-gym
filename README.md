@@ -1,3 +1,4 @@
+**[[简体中文]](./README_CH.md)**
 # <a href="https://sites.google.com/view/humanoid-gym/">Humanoid-Gym: Reinforcement Learning for Humanoid Robot with Zero-Shot Sim2Real Transfer</a>
 
 <a href="https://sites.google.com/view/humanoid-gym/"><strong>Project Page</strong></a>
