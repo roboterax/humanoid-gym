@@ -16,7 +16,7 @@
 
 Humanoid-Gym is an easy-to-use reinforcement learning (RL) framework based on Nvidia Isaac Gym, designed to train locomotion skills for humanoid robots, emphasizing zero-shot transfer from simulation to the real-world environment. Humanoid-Gym also integrates a sim-to-sim framework from Isaac Gym to Mujoco that allows users to verify the trained policies in different physical simulations to ensure the robustness and generalization of the policies.
 
-This codebase is verified by RobotEra's XBot-S (1.2 meter tall humanoid robot) and XBot-L (1.65 meter tall humanoid robot) in real-world environment with zero-shot sim-to-real transfer.
+This codebase is verified by RobotEra's XBot-S (1.2-meter tall humanoid robot) and XBot-L (1.65-meter tall humanoid robot) in a real-world environment with zero-shot sim-to-real transfer.
 
 ## Features
 
@@ -203,6 +203,14 @@ Please cite the following if you use this code or parts of it:
   journal={arXiv preprint arXiv:2404.05695},
   year={2024}
 }
+
+@inproceedings{gu2024advancing,
+  title={Advancing Humanoid Locomotion: Mastering Challenging Terrains with Denoising World Model Learning},
+  author={Gu, Xinyang and Wang, Yen-Jen and Zhu, Xiang and Shi, Chengming and Guo, Yanjiang and Liu, Yichen and Chen, Jianyu},
+  booktitle={Robotics: Science and Systems},
+  year={2024},
+  url={https://enriquecoronadozu.github.io/rssproceedings2024/rss20/p058.pdf}
+}
 ```
 
 ## Acknowledgment
@@ -211,4 +219,4 @@ The implementation of Humanoid-Gym relies on resources from [legged_gym](https:/
 
 ## Any Questions?
 
-If you have further questions, please feel free to contact [support@robotera.com](mailto:support@robotera.com) or create an issue in this repository.
+If you have any more questions, please contact [support@robotera.com](mailto:support@robotera.com) or create an issue in this repository.
