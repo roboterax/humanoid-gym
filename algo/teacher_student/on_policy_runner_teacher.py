@@ -39,9 +39,6 @@ import torch
 from humanoid.algo.teacher_student.ppo_teacher import PPO_teacher
 from humanoid.algo.teacher_student.actor_critic_teacher import ActorCriticTeacher
 from humanoid.algo.vec_env import VecEnv
-from humanoid.algo.teacher_student.dagger import DAgger
-from humanoid.algo.teacher_student.nn_model.tcn import TemporalConvNet as TCN
-from humanoid.algo.teacher_student.actor_critic_teacher import Student
 
 
 class OnPolicyRunnerTeacher:
@@ -72,11 +69,6 @@ class OnPolicyRunnerTeacher:
         self.alg: PPO_teacher = alg_class(actor_critic, device=self.device, **self.alg_cfg)
         self.num_steps_per_env = self.cfg["num_steps_per_env"]
         self.save_interval = self.cfg["save_interval"]
-
-
-        # student policy 
-        self.student_alg = DAgger(teacher=self.alg.actor_critic, env=self.env, rl_device=self.device)
-
 
 
         # init storage and model
@@ -150,7 +142,6 @@ class OnPolicyRunnerTeacher:
                 self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)))
             ep_infos.clear()
         
-        self.student_alg.train_iter()
         self.current_learning_iteration += num_learning_iterations
         self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(self.current_learning_iteration)))
         # self.save()
@@ -231,13 +222,6 @@ class OnPolicyRunnerTeacher:
             'iter': self.current_learning_iteration,
             'infos': infos,
             }, path)
-    
-        if self.student_alg.student_train_flag == 1:
-            torch.save({
-                'model_state_dict': self.student_alg.student.state_dict(),
-                'optimizer_state_dict': self.student_alg.optimizer.state_dict(),
-                'infos': "Student_model",
-            }, os.path.join(self.log_dir, 'Student_model.pt'))
 
     def load(self, path, load_optimizer=True):
         loaded_dict = torch.load(path)
@@ -246,24 +230,11 @@ class OnPolicyRunnerTeacher:
             self.alg.optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
         self.current_learning_iteration = loaded_dict['iter']
         return loaded_dict['infos']
-    
-    def load_student(self, path, load_optimizer=True):
-        loaded_dict = torch.load(path)
-        # print(loaded_dict)
-        self.student_alg.student.load_state_dict(loaded_dict['model_state_dict'])
-        if load_optimizer:
-            self.student_alg.optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
-        # self.current_learning_iteration = loaded_dict['iter']
-        return loaded_dict['infos']
+
 
     def get_inference_policy(self, device=None):
         self.alg.actor_critic.eval() # switch to evaluation mode (dropout for example)
         if device is not None:
             self.alg.actor_critic.to(device)
         return self.alg.actor_critic.act_inference
-    
-    def get_student_inference_policy(self, device=None):
-        self.student_alg.student.eval() # switch to evaluation mode (dropout for example)
-        if device is not None:
-            self.student_alg.student.to(device)
-        return self.student_alg.student.act_inference
+

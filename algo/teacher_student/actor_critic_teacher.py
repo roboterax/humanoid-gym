@@ -59,20 +59,8 @@ class ActorCriticTeacher(nn.Module):
 
         self.std = nn.Parameter(init_noise_std * torch.ones(num_actions))
 
-        self.latent_embeddings = None
-
-
         # Policy
-        actor_layers = []
-        actor_layers.append(nn.Linear(mlp_input_dim_a, actor_hidden_dims[0]))
-        actor_layers.append(activation)
-        for l in range(len(actor_hidden_dims)):
-            if l == len(actor_hidden_dims) - 1:
-                actor_layers.append(nn.Linear(actor_hidden_dims[l], num_actions))
-            else:
-                actor_layers.append(nn.Linear(actor_hidden_dims[l], actor_hidden_dims[l + 1]))
-                actor_layers.append(activation)
-        self.actor_mlp = nn.Sequential(*actor_layers)
+        self.actor_nn = actor_nn(mlp_input_dim_a, mlp_input_dim_e, actor_hidden_dims, encoder_hidden_dims)
 
         # Value function
         critic_layers = []
@@ -86,23 +74,13 @@ class ActorCriticTeacher(nn.Module):
                 critic_layers.append(activation)
         self.critic_mlp = nn.Sequential(*critic_layers)
 
-        # MLP Encoder
-        encoder_layers = []
-        encoder_layers.append(nn.Linear(mlp_input_dim_e, encoder_hidden_dims[0]))
-        for l in range(len(encoder_hidden_dims)):
-            if l == len(encoder_hidden_dims) - 1:
-                encoder_layers.append(nn.Linear(encoder_hidden_dims[l], num_latent_embeddings))
-            else:
-                encoder_layers.append(nn.Linear(encoder_hidden_dims[l], encoder_hidden_dims[l + 1]))
-                encoder_layers.append(activation)
-        self.encoder = nn.Sequential(*encoder_layers)
+        print(f"Critic MLP: {self.critic_mlp}")
 
-        print(f"Encoder MLP: {self.encoder}")
+        
 
     def actor(self, obs, privileged_obs):
-        self.latent_embeddings = self.encoder(privileged_obs)
-        actor_input = torch.cat((obs, self.latent_embeddings), dim=-1)
-        mean = self.actor_mlp(actor_input)
+
+        mean = self.actor_nn(obs, privileged_obs)
         return mean
     
     def critic(self, obs, privileged_obs):
@@ -156,6 +134,40 @@ class ActorCriticTeacher(nn.Module):
         value = self.critic(observations, privileged_observations)
         return value
 
+class actor_nn(nn.Module):
+    def __init__(self, mlp_input_dim_a, mlp_input_dim_e, actor_hidden_dims, encoder_hidden_dims, num_latent_embeddings=72, activation=nn.ELU(), num_actions=12):
+        super().__init__()
+        # Policy
+        # Actor MLP
+        actor_layers = []
+        actor_layers.append(nn.Linear(mlp_input_dim_a, actor_hidden_dims[0]))
+        actor_layers.append(activation)
+        for l in range(len(actor_hidden_dims)):
+            if l == len(actor_hidden_dims) - 1:
+                actor_layers.append(nn.Linear(actor_hidden_dims[l], num_actions))
+            else:
+                actor_layers.append(nn.Linear(actor_hidden_dims[l], actor_hidden_dims[l + 1]))
+                actor_layers.append(activation)
+        self.actor_mlp = nn.Sequential(*actor_layers)
+
+        # MLP Encoder
+        encoder_layers = []
+        encoder_layers.append(nn.Linear(mlp_input_dim_e, encoder_hidden_dims[0]))
+        for l in range(len(encoder_hidden_dims)):
+            if l == len(encoder_hidden_dims) - 1:
+                encoder_layers.append(nn.Linear(encoder_hidden_dims[l], num_latent_embeddings))
+            else:
+                encoder_layers.append(nn.Linear(encoder_hidden_dims[l], encoder_hidden_dims[l + 1]))
+                encoder_layers.append(activation)
+        self.encoder = nn.Sequential(*encoder_layers)
+
+        self.latent_embeddings = None
+
+    def forward(self, obs, privileged_obs):
+        self.latent_embeddings = self.encoder(privileged_obs)
+        actor_input = torch.cat((obs, self.latent_embeddings), dim=-1)
+        mean = self.actor_mlp(actor_input)
+        return mean
 
 class Student(nn.Module):
     def __init__(self,

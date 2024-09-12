@@ -34,5 +34,4 @@ from .ppo_teacher import PPO_teacher
 from .on_policy_runner_teacher import OnPolicyRunnerTeacher
 from .actor_critic_teacher import ActorCriticTeacher
 from .rollout_storage import RolloutStorage
-from .dagger import DAgger
 # from nn_model import tcn, transformer

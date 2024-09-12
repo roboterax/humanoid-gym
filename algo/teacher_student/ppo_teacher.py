@@ -94,7 +94,7 @@ class PPO_teacher(PPO):
             self.transition.hidden_states = self.actor_critic.get_hidden_states()
         # Compute the actions and values
         self.transition.actions = self.actor_critic.act(obs, privileged_obs).detach()
-        self.transition.latent_embeddings = self.actor_critic.latent_embeddings.detach()
+        self.transition.latent_embeddings = self.actor_critic.actor_nn.latent_embeddings.detach()
         self.transition.values = self.actor_critic.evaluate(obs, privileged_obs).detach()
         self.transition.actions_log_prob = self.actor_critic.get_actions_log_prob(self.transition.actions).detach()
         self.transition.action_mean = self.actor_critic.action_mean.detach()
