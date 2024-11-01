@@ -99,7 +99,17 @@ class XBotLFreeEnv(LeggedRobot):
 
     def  _get_phase(self):
         cycle_time = self.cfg.rewards.cycle_time
-        phase = self.episode_length_buf * self.dt / cycle_time
+        self.gait_start = torch.randint(0, 2, (self.num_envs,)).to(self.device)*0.5
+        # print(f"self.gait_start:{self.gait_start}")
+        if self.cfg.commands.sw_switch:
+            stand_command = (torch.norm(self.commands[:, :2], dim=1) <= self.cfg.commands.stand_com_threshold)
+            self.phase_length_buf[stand_command] = 0 # set this as 0 for which env is standing
+            # self.gait_start is rand 0 or 0.5
+            phase = (self.phase_length_buf * self.dt / cycle_time ) * (~stand_command)
+            # print(f"phase:{phase}")
+        else:
+            phase = self.episode_length_buf * self.dt / cycle_time 
+        # print(f"phase:{phase}")
         return phase
 
     def _get_gait_phase(self):
@@ -114,30 +124,58 @@ class XBotLFreeEnv(LeggedRobot):
         stance_mask[:, 1] = sin_pos < 0
         # Double support phase
         stance_mask[torch.abs(sin_pos) < 0.1] = 1
+        # print(f"phase:{phase}")
+
 
         return stance_mask
     
 
     def compute_ref_state(self):
         phase = self._get_phase()
+        # print(f"torch.norm(self.commands[:, :2]):{torch.norm(self.commands[:, :2])}")
         sin_pos = torch.sin(2 * torch.pi * phase)
         sin_pos_l = sin_pos.clone()
         sin_pos_r = sin_pos.clone()
         self.ref_dof_pos = torch.zeros_like(self.dof_pos)
         scale_1 = self.cfg.rewards.target_joint_pos_scale
         scale_2 = 2 * scale_1
+        # print(f"self.dof_names:{self.dof_names}")
+        # print(f"self.default_dof_pos:{self.default_dof_pos}")
+
+        foot_ref_joints=[-0.34,-0.15,0.25,0.34,0.15,-0.25]
+        arm_ref_joints=[0.2,-0.1,-0.3,-0.2,0.1,0.3]
         # left foot stance phase set to default joint pos
         sin_pos_l[sin_pos_l > 0] = 0
-        self.ref_dof_pos[:, 2] = sin_pos_l * scale_1
-        self.ref_dof_pos[:, 3] = sin_pos_l * scale_2
-        self.ref_dof_pos[:, 4] = sin_pos_l * scale_1
+        # self.ref_dof_pos[:, 2] = sin_pos_l * scale_1
+        # self.ref_dof_pos[:, 3] = sin_pos_l * scale_2
+        # self.ref_dof_pos[:, 4] = sin_pos_l * scale_1
+        # print(f"sin_pos_l:{sin_pos_l}")
+        # print(f"foot_ref_joints:{foot_ref_joints}")
+        # print(f"arm_ref_joints:{arm_ref_joints}")
+
+        self.ref_dof_pos[:, 2] = torch.abs(sin_pos_l) * foot_ref_joints[0]
+        self.ref_dof_pos[:, 3] = torch.abs(sin_pos_l) * foot_ref_joints[1]
+        self.ref_dof_pos[:, 4] = torch.abs(sin_pos_l) * foot_ref_joints[2]
+        self.ref_dof_pos[:, 15] = torch.abs(sin_pos_l) * arm_ref_joints[0]
+        self.ref_dof_pos[:, 16] = torch.abs(sin_pos_l) * arm_ref_joints[1]
+        self.ref_dof_pos[:, 17] = torch.abs(sin_pos_l) * arm_ref_joints[2]
         # right foot stance phase set to default joint pos
         sin_pos_r[sin_pos_r < 0] = 0
-        self.ref_dof_pos[:, 8] = sin_pos_r * scale_1
-        self.ref_dof_pos[:, 9] = sin_pos_r * scale_2
-        self.ref_dof_pos[:, 10] = sin_pos_r * scale_1
+        # self.ref_dof_pos[:, 8] = sin_pos_r * scale_1
+        # self.ref_dof_pos[:, 9] = sin_pos_r * scale_2
+        # self.ref_dof_pos[:, 10] = sin_pos_r * scale_1
+        self.ref_dof_pos[:, 11] = torch.abs(sin_pos_r) * foot_ref_joints[3]
+        self.ref_dof_pos[:, 12] = torch.abs(sin_pos_r) * foot_ref_joints[4]
+        self.ref_dof_pos[:, 13] = torch.abs(sin_pos_r) * foot_ref_joints[5]
+        self.ref_dof_pos[:, 6] = torch.abs(sin_pos_r) * arm_ref_joints[3]
+        self.ref_dof_pos[:, 7] = torch.abs(sin_pos_r) * arm_ref_joints[4]
+        self.ref_dof_pos[:, 8] = torch.abs(sin_pos_r) * arm_ref_joints[5]
         # Double support phase
         self.ref_dof_pos[torch.abs(sin_pos) < 0.1] = 0
+        # print(f"self.ref_dof_pos_l_foot:{self.ref_dof_pos[:,2:5]},self.ref_dof_pos_r_arm:{self.ref_dof_pos[:,12:15]}")
+
+        # print(f"self.ref_dof_pos_l_foot:{self.ref_dof_pos[:,2:5]},self.ref_dof_pos_r_arm:{self.ref_dof_pos[:,12:15]}")
+        # print(f"self.ref_dof_pos_r_foot:{self.ref_dof_pos[:,8:11]},self.ref_dof_pos_l_arm:{self.ref_dof_pos[:,15:18]}")
 
         self.ref_action = 2 * self.ref_dof_pos
 
@@ -178,11 +216,11 @@ class XBotLFreeEnv(LeggedRobot):
         self.add_noise = self.cfg.noise.add_noise
         noise_scales = self.cfg.noise.noise_scales
         noise_vec[0: 5] = 0.  # commands
-        noise_vec[5: 17] = noise_scales.dof_pos * self.obs_scales.dof_pos
-        noise_vec[17: 29] = noise_scales.dof_vel * self.obs_scales.dof_vel
-        noise_vec[29: 41] = 0.  # previous actions
-        noise_vec[41: 44] = noise_scales.ang_vel * self.obs_scales.ang_vel   # ang vel
-        noise_vec[44: 47] = noise_scales.quat * self.obs_scales.quat         # euler x,y
+        noise_vec[5: 23] = noise_scales.dof_pos * self.obs_scales.dof_pos
+        noise_vec[23: 41] = noise_scales.dof_vel * self.obs_scales.dof_vel
+        noise_vec[41: 59] = 0.  # previous actions
+        noise_vec[59: 62] = noise_scales.ang_vel * self.obs_scales.ang_vel   # ang vel
+        noise_vec[62: 65] = noise_scales.quat * self.obs_scales.quat         # euler x,y
         return noise_vec
 
 
@@ -219,10 +257,10 @@ class XBotLFreeEnv(LeggedRobot):
         self.privileged_obs_buf = torch.cat((
             self.command_input,  # 2 + 3
             (self.dof_pos - self.default_joint_pd_target) * \
-            self.obs_scales.dof_pos,  # 12
-            self.dof_vel * self.obs_scales.dof_vel,  # 12
-            self.actions,  # 12
-            diff,  # 12
+            self.obs_scales.dof_pos,  # 12+6
+            self.dof_vel * self.obs_scales.dof_vel,  # 12+6
+            self.actions,  # 12+6
+            diff,  # 12+6
             self.base_lin_vel * self.obs_scales.lin_vel,  # 3
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
@@ -232,20 +270,20 @@ class XBotLFreeEnv(LeggedRobot):
             self.body_mass / 30.,  # 1
             stance_mask,  # 2
             contact_mask,  # 2
-        ), dim=-1)
+        ), dim=-1)#97
 
         obs_buf = torch.cat((
             self.command_input,  # 5 = 2D(sin cos) + 3D(vel_x, vel_y, aug_vel_yaw)
-            q,    # 12D
-            dq,  # 12D
-            self.actions,   # 12D
+            q,    # 18D
+            dq,  # 18D
+            self.actions,   # 18D
             self.base_ang_vel * self.obs_scales.ang_vel,  # 3
             self.base_euler_xyz * self.obs_scales.quat,  # 3
-        ), dim=-1)
+        ), dim=-1)#65
 
         if self.cfg.terrain.measure_heights:
             heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
-            self.privileged_obs_buf = torch.cat((self.obs_buf, heights), dim=-1)
+            self.privileged_obs_buf = torch.cat((self.obs_buf, heights), dim=-1)#97+65+1=163
         
         if self.add_noise:  
             obs_now = obs_buf.clone() + torch.randn_like(obs_buf) * self.noise_scale_vec * self.cfg.noise.noise_level
@@ -268,22 +306,147 @@ class XBotLFreeEnv(LeggedRobot):
         for i in range(self.critic_history.maxlen):
             self.critic_history[i][env_ids] *= 0
 
+    def _init_buffers(self):
+        """ Initialize torch tensors which will contain simulation states and processed quantities
+        """
+        super()._init_buffers()
+        # self.gait_time = torch.zeros(self.num_envs, len(self.cfg.commands.gait) ,dtype=torch.int, device=self.device, requires_grad=False)
+        self.phase_length_buf = torch.zeros(
+            self.num_envs, device=self.device, dtype=torch.long)
+        self.gait_start = torch.randint(0, 2, (self.num_envs,)).to(self.device)*0.5
+
+
+
 # ================================================ Rewards ================================================== #
-    def _reward_joint_pos(self):
+    def _reward_other_joint_pos(self):
         """
         Calculates the reward based on the difference between the current joint positions and the target joint positions.
         """
-        joint_pos = self.dof_pos.clone()
-        pos_target = self.ref_dof_pos.clone()
-        diff = joint_pos - pos_target
-        r = torch.exp(-2 * torch.norm(diff, dim=1)) - 0.2 * torch.norm(diff, dim=1).clamp(0, 0.5)
-        return r
 
+        joint_pos = self.dof_pos.clone()
+        joint_other_pos = torch.cat((joint_pos[:,0:2], joint_pos[:, 5].unsqueeze(1)), dim=1)
+        joint_other_pos = torch.cat((joint_other_pos, joint_pos[:,9:11]), dim=1)
+        joint_other_pos = torch.cat((joint_other_pos, joint_pos[:,14].unsqueeze(1)), dim=1)
+        # print(f"joint_pos:{joint_pos}")
+        # print(f"joint_other_pos:{joint_other_pos}")
+
+
+        # pos_target = self.ref_dof_pos.clone()
+        # joint_other_pos_target = torch.cat((pos_target[:,0:2], pos_target[:, 5].unsqueeze(1)), dim=1)
+        # joint_other_pos_target = torch.cat((joint_other_pos_target, pos_target[:,9:11]), dim=1)
+        # joint_other_pos_target = torch.cat((joint_other_pos_target, pos_target[:,14].unsqueeze(1)), dim=1)
+        # print(f"pos_target:{pos_target}")
+        # print(f"joint_other_pos_target:{joint_other_pos_target}")
+
+
+
+        # diff_walk = joint_pos - pos_target
+        # pos_target[:, 2:5] = 0
+        # pos_target[:, 11:14] = 0
+        # print(f"pos_target1:{pos_target}")
+        # diff_stand = joint_pos - pos_target
+        # diff_arms = diff_walk[:,6:9].abs().sum(dim=1)+diff_walk[:,15:18].abs().sum(dim=1)
+        # diff_legs = diff_walk[:,2:5].abs().sum(dim=1)+diff_walk[:,11:14].abs().sum(dim=1)
+        # joints_diff = joint_other_pos.abs().sum(dim=1)
+        # print(f"diff_walk:{torch.norm(diff_walk, dim=1)}")
+        # print(f"diff_walk.sum:{diff_walk.abs().sum(dim=1)}")
+        # print(f"diff_arms : {diff_legs}")
+        # print(f"diff_legs : {diff_arms}")
+
+        
+        # print(f"diff_stand:{torch.norm(diff_stand, dim=1)}")
+        # - 0.2 * torch.norm(diff_walk, dim=1).clamp(0, 0.5)
+        # r_walk = torch.exp(-2 * torch.norm(diff_walk, dim=1)) 
+        # r_stand = torch.exp(-20 * torch.norm(diff_stand, dim=1)) 
+        # print(f"r_walk:{r_walk}")
+
+        # print(f"r_stand:{r_stand}")
+        # r = torch.where(torch.norm(self.commands[:, :2])>0.1,r_walk,r_stand)
+        # print(f"r:{r}")
+
+        # reward = torch.exp(-2 * torch.norm(joint_other_pos, dim=1)) - 0.2 * torch.norm(joint_other_pos, dim=1).clamp(0, 0.5)
+        reward =  torch.exp(-2 * joint_other_pos.abs().sum(dim=1))
+        # print(f"reward:{reward}")
+        # print(f"reward2:{reward2}")
+        return reward
+    
+    def _reward_arms_joint_pos(self):
+        """
+        Calculates the reward based on the difference between the current joint positions and the target joint positions.
+        """
+        joint_left_arm_pos = self.dof_pos[:,6:9].clone()
+        joint_right_arm_pos = self.dof_pos[:,15:18].clone()
+        joint_arms_pos=torch.cat((joint_left_arm_pos, joint_right_arm_pos), dim=1)
+        # print(f"joint_arms_pos:{joint_arms_pos}")
+
+        left_arm_pos_target = self.ref_dof_pos[:,6:9].clone()
+        right_arm_pos_target = self.ref_dof_pos[:,15:18].clone()
+        arms_pos_target=torch.cat((left_arm_pos_target, right_arm_pos_target), dim=1)
+        # print(f"arms_pos_target:{arms_pos_target}")
+
+        arms_diff = joint_arms_pos - arms_pos_target
+
+        # print(f"arms_diff.norm : {torch.norm(arms_diff, dim=1)}")
+        # print(f"arms_diff.sum : {arms_diff.abs().sum(dim=1)}")
+
+        
+        # - 0.2 * torch.norm(diff_walk, dim=1).clamp(0, 0.5)
+        # reward2 = torch.exp(-2 * torch.norm(arms_diff, dim=1)) - 0.2 * torch.norm(arms_diff, dim=1).clamp(0, 0.5)
+        reward =  torch.exp(-2 * arms_diff.abs().sum(dim=1)) 
+        # print(f"reward:{reward}")
+        # print(f"reward2:{reward2}")
+        return reward
+    
+
+    def _reward_legs_joint_pos(self):
+        """
+        Calculates the reward based on the difference between the current joint positions and the target joint positions.
+        """
+        joint_left_leg_pos = self.dof_pos[:,2:5].clone()
+        joint_right_leg_pos = self.dof_pos[:,11:14].clone()
+        joint_legs_pos=torch.cat((joint_left_leg_pos, joint_right_leg_pos), dim=1)
+        # print(f"joint_legs_pos:{joint_legs_pos}")
+
+        left_leg_pos_target = self.ref_dof_pos[:,2:5].clone()
+        right_leg_pos_target = self.ref_dof_pos[:,11:14].clone()
+        legs_pos_target=torch.cat((left_leg_pos_target, right_leg_pos_target), dim=1)
+        # print(f"legs_pos_target:{legs_pos_target}")
+
+        legs_diff_walk = joint_legs_pos - legs_pos_target
+        legs_diff_stand = joint_legs_pos
+
+        # print(f"arms_diff.norm : {torch.norm(legs_diff, dim=1)}")
+        # print(f"arms_diff.sum : {legs_diff.abs().sum(dim=1)}")
+
+        
+        # - 0.2 * torch.norm(diff_walk, dim=1).clamp(0, 0.5)
+        # reward = torch.exp(-2 * torch.norm(legs_diff, dim=1)) - 0.2 * torch.norm(legs_diff, dim=1).clamp(0, 0.5)
+        reward_walk =  torch.exp(-2 * legs_diff_walk.abs().sum(dim=1))
+        reward_stand =  torch.exp(-2 * legs_diff_stand.abs().sum(dim=1))
+        reward = torch.where(torch.norm(self.commands[:, :2])>= self.cfg.commands.stand_com_threshold,reward_walk,reward_stand)
+        # print(f"reward:{reward}")
+        # print(f"reward2:{reward2}")
+        return reward
+    
+    def _reward_stand_still(self):
+        # penalize motion at zero commands
+        stand_command = (torch.norm(self.commands[:, :2], dim=1) <= self.cfg.commands.stand_com_threshold)
+        left_leg_pos = self.dof_pos[:,2:5].clone()
+        right_leg_pos = self.dof_pos[:,11:14].clone()
+        legs_pos=torch.cat((left_leg_pos, right_leg_pos), dim=1)
+        r = torch.exp(-2*torch.sum(torch.abs(legs_pos), dim=1))
+        r = torch.where(stand_command, r.clone(),
+                        torch.zeros_like(r))
+        # print(f"reward:{r}")
+        return r
+    
+    
     def _reward_feet_distance(self):
         """
         Calculates the reward based on the distance between the feet. Penalize feet get close to each other or too far away.
         """
         foot_pos = self.rigid_state[:, self.feet_indices, :2]
+        # print(f"foot_pos:{foot_pos}")
         foot_dist = torch.norm(foot_pos[:, 0, :] - foot_pos[:, 1, :], dim=1)
         fd = self.cfg.rewards.min_dist
         max_df = self.cfg.rewards.max_dist
@@ -340,9 +503,12 @@ class XBotLFreeEnv(LeggedRobot):
         """
         contact = self.contact_forces[:, self.feet_indices, 2] > 5.
         stance_mask = self._get_gait_phase()
-        reward = torch.where(contact == stance_mask, 1.0, -0.3)
-        return torch.mean(reward, dim=1)
-
+        both_stand_mask = torch.ones((self.num_envs, 2), device=self.device)
+        row_matches = torch.where(torch.norm(self.commands[:, :2])>self.cfg.commands.stand_com_threshold,(contact == stance_mask).all(dim=1),(contact == both_stand_mask).all(dim=1))
+        reward = torch.where(torch.norm(self.commands[:, :2])>self.cfg.commands.stand_com_threshold,torch.where(row_matches,1,-1),torch.where(row_matches,1,-1))
+        # print(f"reward:{reward}")
+        return reward
+    
     def _reward_orientation(self):
         """
         Calculates the reward for maintaining a flat base orientation. It penalizes deviation 
@@ -366,7 +532,7 @@ class XBotLFreeEnv(LeggedRobot):
         """
         joint_diff = self.dof_pos - self.default_joint_pd_target
         left_yaw_roll = joint_diff[:, :2]
-        right_yaw_roll = joint_diff[:, 6: 8]
+        right_yaw_roll = joint_diff[:, 9: 11]
         yaw_roll = torch.norm(left_yaw_roll, dim=1) + torch.norm(right_yaw_roll, dim=1)
         yaw_roll = torch.clamp(yaw_roll - 0.1, 0, 50)
         return torch.exp(-yaw_roll * 100) - 0.01 * torch.norm(joint_diff, dim=1)
@@ -429,9 +595,16 @@ class XBotLFreeEnv(LeggedRobot):
         Tracks linear velocity commands along the xy axes. 
         Calculates a reward based on how closely the robot's linear velocity matches the commanded values.
         """
-        lin_vel_error = torch.sum(torch.square(
+        stand_command = (torch.norm(self.commands[:, :2], dim=1) <= self.cfg.commands.stand_com_threshold)
+        lin_vel_error_square = torch.sum(torch.square(
             self.commands[:, :2] - self.base_lin_vel[:, :2]), dim=1)
-        return torch.exp(-lin_vel_error * self.cfg.rewards.tracking_sigma)
+        lin_vel_error_abs = torch.sum(torch.abs(
+            self.commands[:, :2] - self.base_lin_vel[:, :2]), dim=1)
+        r_square = torch.exp(-lin_vel_error_square * self.cfg.rewards.tracking_sigma)
+        r_abs = torch.exp(-lin_vel_error_abs * self.cfg.rewards.tracking_sigma * 2)
+        r = torch.where(stand_command, r_abs, r_square)
+        
+        return r
 
     def _reward_tracking_ang_vel(self):
         """
@@ -439,9 +612,15 @@ class XBotLFreeEnv(LeggedRobot):
         Computes a reward based on how closely the robot's angular velocity matches the commanded yaw values.
         """   
         
-        ang_vel_error = torch.square(
+        stand_command = (torch.norm(self.commands[:, :3], dim=1) <= self.cfg.commands.stand_com_threshold)
+        ang_vel_error_square = torch.square(
             self.commands[:, 2] - self.base_ang_vel[:, 2])
-        return torch.exp(-ang_vel_error * self.cfg.rewards.tracking_sigma)
+        ang_vel_error_abs = torch.abs(
+            self.commands[:, 2] - self.base_ang_vel[:, 2])
+        r_square = torch.exp(-ang_vel_error_square * self.cfg.rewards.tracking_sigma)
+        r_abs = torch.exp(-ang_vel_error_abs * self.cfg.rewards.tracking_sigma * 2)
+        r = torch.where(stand_command, r_abs, r_square)
+        return r
     
     def _reward_feet_clearance(self):
         """
@@ -538,3 +717,105 @@ class XBotLFreeEnv(LeggedRobot):
             self.actions + self.last_last_actions - 2 * self.last_actions), dim=1)
         term_3 = 0.05 * torch.sum(torch.abs(self.actions), dim=1)
         return term_1 + term_2 + term_3
+    
+class XBotLNoArmsEnv(XBotLFreeEnv):
+    def compute_ref_state(self):
+        phase = self._get_phase()
+        # print(f"torch.norm(self.commands[:, :2]):{torch.norm(self.commands[:, :2])}")
+        sin_pos = torch.sin(2 * torch.pi * phase)
+        sin_pos_l = sin_pos.clone()
+        sin_pos_r = sin_pos.clone()
+        self.ref_dof_pos = torch.zeros_like(self.dof_pos)
+               
+        foot_ref_joints=[-0.34,-0.15,0.25,0.34,0.15,-0.25]
+          
+        sin_pos_l[sin_pos_l > 0] = 0
+        self.ref_dof_pos[:, 2] = torch.abs(sin_pos_l) * foot_ref_joints[0]
+        self.ref_dof_pos[:, 3] = torch.abs(sin_pos_l) * foot_ref_joints[1]
+        self.ref_dof_pos[:, 4] = torch.abs(sin_pos_l) * foot_ref_joints[2]
+        sin_pos_r[sin_pos_r < 0] = 0
+        self.ref_dof_pos[:, 8] = torch.abs(sin_pos_r) * foot_ref_joints[3]
+        self.ref_dof_pos[:, 9] = torch.abs(sin_pos_r) * foot_ref_joints[4]
+        self.ref_dof_pos[:, 10] = torch.abs(sin_pos_r) * foot_ref_joints[5]
+
+        # Double support phase
+        self.ref_dof_pos[torch.abs(sin_pos) < 0.1] = 0
+        self.ref_action = 2 * self.ref_dof_pos
+
+    def _reward_other_joint_pos(self):
+        """
+        Calculates the reward based on the difference between the current joint positions and the target joint positions.
+        """
+        joint_pos = self.dof_pos.clone()
+        joint_other_pos = torch.cat((joint_pos[:,0:2], joint_pos[:, 5].unsqueeze(1)), dim=1)
+        joint_other_pos = torch.cat((joint_other_pos, joint_pos[:,6:8]), dim=1)
+        joint_other_pos = torch.cat((joint_other_pos, joint_pos[:,11].unsqueeze(1)), dim=1)
+        # reward = torch.exp(-2 * torch.norm(joint_other_pos, dim=1)) - 0.2 * torch.norm(joint_other_pos, dim=1).clamp(0, 0.5)
+        reward =  torch.exp(-2 * joint_other_pos.abs().sum(dim=1))
+        # print(f"reward:{reward}")
+        # print(f"reward2:{reward2}")
+        return reward
+    
+    def _reward_arms_joint_pos(self):
+        """
+        Calculates the reward based on the difference between the current joint positions and the target joint positions.
+        """
+        reward =  torch.zeros((self.num_envs, 1), device=self.device)
+        return reward
+    
+
+    def _reward_legs_joint_pos(self):
+        """
+        Calculates the reward based on the difference between the current joint positions and the target joint positions.
+        """
+        joint_left_leg_pos = self.dof_pos[:,2:5].clone()
+        joint_right_leg_pos = self.dof_pos[:,8:11].clone()
+        joint_legs_pos=torch.cat((joint_left_leg_pos, joint_right_leg_pos), dim=1)
+        # print(f"joint_legs_pos:{joint_legs_pos}")
+
+        left_leg_pos_target = self.ref_dof_pos[:,2:5].clone()
+        right_leg_pos_target = self.ref_dof_pos[:,8:11].clone()
+        legs_pos_target=torch.cat((left_leg_pos_target, right_leg_pos_target), dim=1)
+        # print(f"legs_pos_target:{legs_pos_target}")
+
+        legs_diff_walk = joint_legs_pos - legs_pos_target
+        legs_diff_stand = joint_legs_pos
+
+        # print(f"legs_diff_walk.norm : {torch.norm(legs_diff_walk, dim=1)}")
+        # print(f"arms_dlegs_diff_walkiff.sum : {legs_diff_walk.abs().sum(dim=1)}")
+
+        
+        # - 0.2 * torch.norm(diff_walk, dim=1).clamp(0, 0.5)
+        # reward = torch.exp(-2 * torch.norm(legs_diff, dim=1)) - 0.2 * torch.norm(legs_diff, dim=1).clamp(0, 0.5)
+        reward_walk =  torch.exp(-4 * legs_diff_walk.abs().sum(dim=1))
+        reward_stand =  torch.exp(-4 * legs_diff_stand.abs().sum(dim=1))
+        reward = torch.where(torch.norm(self.commands[:, :2])>= self.cfg.commands.stand_com_threshold,reward_walk,reward_stand)
+        # print(f"legs_reward:{reward}")
+        # print(f"reward2:{reward2}")
+        return reward
+    
+    def _reward_default_joint_pos(self):
+        """
+        Calculates the reward for keeping joint positions close to default positions, with a focus 
+        on penalizing deviation in yaw and roll directions. Excludes yaw and roll from the main penalty.
+        """
+        joint_diff = self.dof_pos - self.default_joint_pd_target
+        left_yaw_roll = joint_diff[:, :2]
+        right_yaw_roll = joint_diff[:, 6: 8]
+        yaw_roll = torch.norm(left_yaw_roll, dim=1) + torch.norm(right_yaw_roll, dim=1)
+        yaw_roll = torch.clamp(yaw_roll - 0.1, 0, 50)
+        return torch.exp(-yaw_roll * 100) - 0.01 * torch.norm(joint_diff, dim=1)
+    
+    def _reward_stand_still(self):
+        # penalize motion at zero commands
+        stand_command = (torch.norm(self.commands[:, :2], dim=1) <= self.cfg.commands.stand_com_threshold)
+        left_leg_pos = self.dof_pos[:,2:5].clone()
+        right_leg_pos = self.dof_pos[:,8:11].clone()
+        legs_pos=torch.cat((left_leg_pos, right_leg_pos), dim=1)
+        # print(f"legs_pos_target:{legs_pos}")
+        r = torch.exp(-2*torch.sum(torch.abs(legs_pos), dim=1))
+        r = torch.where(stand_command, r.clone(),
+                        torch.zeros_like(r))
+        # print(f"_reward_stand_still:{r}")
+        return r
+

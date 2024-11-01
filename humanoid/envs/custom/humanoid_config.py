@@ -39,11 +39,11 @@ class XBotLCfg(LeggedRobotCfg):
         # change the observation dim
         frame_stack = 15
         c_frame_stack = 3
-        num_single_obs = 47
+        num_single_obs = 65
         num_observations = int(frame_stack * num_single_obs)
-        single_num_privileged_obs = 73
+        single_num_privileged_obs = 97
         num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
-        num_actions = 12
+        num_actions = 18
         num_envs = 4096
         episode_length_s = 24     # episode length in seconds
         use_ref_actions = False   # speed up training by using reference actions
@@ -101,26 +101,50 @@ class XBotLCfg(LeggedRobotCfg):
         pos = [0.0, 0.0, 0.95]
 
         default_joint_angles = {  # = target angles [rad] when action = 0.0
-            'left_leg_roll_joint': 0.,
-            'left_leg_yaw_joint': 0.,
-            'left_leg_pitch_joint': 0.,
-            'left_knee_joint': 0.,
-            'left_ankle_pitch_joint': 0.,
-            'left_ankle_roll_joint': 0.,
-            'right_leg_roll_joint': 0.,
-            'right_leg_yaw_joint': 0.,
-            'right_leg_pitch_joint': 0.,
-            'right_knee_joint': 0.,
-            'right_ankle_pitch_joint': 0.,
-            'right_ankle_roll_joint': 0.,
+            'left_leg_roll_joint': 0.,          #0
+            'left_leg_yaw_joint': 0.,           #1
+            'left_leg_pitch_joint': 0.,         #2
+            'left_knee_joint': 0.,              #3
+            'left_ankle_pitch_joint': 0.,       #4
+            'left_ankle_roll_joint': 0.,        #5
+            'left_shoulder_pitch_joint': 0.,    #6
+            'left_elbow_pitch_joint': 0.,       #7
+            'left_wrist_roll_joint': 0.,        #8
+            'right_leg_roll_joint': 0.,         #9
+            'right_leg_yaw_joint': 0.,          #10
+            'right_leg_pitch_joint': 0.,        #11
+            'right_knee_joint': 0.,             #12
+            'right_ankle_pitch_joint': 0.,      #13 
+            'right_ankle_roll_joint': 0.,       #14
+            'right_shoulder_pitch_joint': 0.,   #15
+            'right_elbow_pitch_joint': 0.,      #16
+            'right_wrist_roll_joint' : 0.,      #17
+            # 'left_leg_roll_joint': 0.: 0.,      #0
+            # 'left_leg_yaw_joint': 0.,#1
+            # 'left_leg_pitch_joint': 0.,#2
+            # 'left_knee_joint': 0.,#3
+            # 'left_ankle_pitch_joint': 0.,#4
+            # 'left_ankle_roll_joint': 0.,#5
+            # 'right_leg_roll_joint': 0.,#6
+            # 'right_leg_yaw_joint': 0.,#7
+            # 'right_leg_pitch_joint': 0.,#8
+            # 'right_knee_joint': 0.,#9
+            # 'right_ankle_pitch_joint': 0.,#10
+            # 'right_ankle_roll_joint': 0.,#11
+            # 'right_shoulder_pitch_joint': 0.,#12
+            # 'right_elbow_pitch_joint': 0.,#13
+            # 'right_wrist_roll_joint': 0.,#14
+            # 'left_shoulder_pitch_joint': 0.,#15
+            # 'left_elbow_pitch_joint': 0.,#16
+            # 'left_wrist_roll_joint': 0.,#17
         }
 
     class control(LeggedRobotCfg.control):
         # PD Drive parameters:
         stiffness = {'leg_roll': 200.0, 'leg_pitch': 350.0, 'leg_yaw': 200.0,
-                     'knee': 350.0, 'ankle': 15}
+                     'knee': 350.0, 'ankle': 15,'shoulder_pitch':200,'elbow_pitch':200,'wrist_roll':200}
         damping = {'leg_roll': 10, 'leg_pitch': 10, 'leg_yaw':
-                   10, 'knee': 10, 'ankle': 10}
+                   10, 'knee': 10, 'ankle': 10,'shoulder_pitch':10,'elbow_pitch':10,'wrist_roll':10}
 
         # action scale: target angle = actionScale * action + defaultAngle
         action_scale = 0.25
@@ -151,7 +175,7 @@ class XBotLCfg(LeggedRobotCfg):
         friction_range = [0.1, 2.0]
         randomize_base_mass = True
         added_mass_range = [-5., 5.]
-        push_robots = True
+        push_robots = False
         push_interval_s = 4
         max_push_vel_xy = 0.2
         max_push_ang_vel = 0.4
@@ -164,12 +188,18 @@ class XBotLCfg(LeggedRobotCfg):
         num_commands = 4
         resampling_time = 8.  # time before command are changed[s]
         heading_command = True  # if true: compute ang vel command from heading error
+        sw_switch = True # use stand_com_threshold or not
+        stand_com_threshold = 0.05
 
         class ranges:
             lin_vel_x = [-0.3, 0.6]   # min max [m/s]
             lin_vel_y = [-0.3, 0.3]   # min max [m/s]
             ang_vel_yaw = [-0.3, 0.3] # min max [rad/s]
             heading = [-3.14, 3.14]
+            # lin_vel_x = [0.0, 0.0]   # min max [m/s]
+            # lin_vel_y = [0.0, 0.0]   # min max [m/s]
+            # ang_vel_yaw = [0.0, 0.0] # min max [rad/s]
+            # heading = [0, 0]
 
     class rewards:
         base_height_target = 0.89
@@ -187,7 +217,9 @@ class XBotLCfg(LeggedRobotCfg):
 
         class scales:
             # reference motion tracking
-            joint_pos = 1.6
+            other_joint_pos = 1.2
+            arms_joint_pos = 1.5
+            legs_joint_pos = 1.5
             feet_clearance = 1.
             feet_contact_number = 1.2
             # gait
@@ -198,8 +230,8 @@ class XBotLCfg(LeggedRobotCfg):
             # contact
             feet_contact_forces = -0.01
             # vel tracking
-            tracking_lin_vel = 1.2
-            tracking_ang_vel = 1.1
+            tracking_lin_vel = 1.5
+            tracking_ang_vel = 1.5
             vel_mismatch_exp = 0.5  # lin_z; ang x,y
             low_speed = 0.2
             track_vel_hard = 0.5
@@ -214,6 +246,7 @@ class XBotLCfg(LeggedRobotCfg):
             dof_vel = -5e-4
             dof_acc = -1e-7
             collision = -1.
+            stand_still = 2.5
 
     class normalization:
         class obs_scales:
@@ -226,6 +259,58 @@ class XBotLCfg(LeggedRobotCfg):
         clip_observations = 18.
         clip_actions = 18.
 
+
+class XBotLNoArmsCfg(XBotLCfg):
+    class env(XBotLCfg.env):
+        # change the observation dim
+        frame_stack = 66      #all histroy obs num
+        short_frame_stack = 5   #short history step
+        c_frame_stack = 3  #all histroy privileged obs num
+        num_single_obs = 47
+        num_observations = int(frame_stack * num_single_obs)
+        single_num_privileged_obs = 73
+        single_linvel_index = 53
+        num_privileged_obs = int(c_frame_stack * single_num_privileged_obs)
+        num_actions = 12
+        num_envs = 4096
+        episode_length_s = 24 #episode length in seconds
+        use_ref_actions = False
+        num_commands = 5 # sin_pos cos_pos vx vy vz
+
+    class init_state(XBotLCfg.init_state):
+        pos = [0.0, 0.0, 0.95]
+
+        default_joint_angles = {  # = target angles [rad] when action = 0.0
+            'left_leg_roll_joint': 0.,      #0
+            'left_leg_yaw_joint': 0.,       #1
+            'left_leg_pitch_joint': 0.,     #2
+            'left_knee_joint': 0.,          #3
+            'left_ankle_pitch_joint': 0.,   #4
+            'left_ankle_roll_joint': 0.,    #5
+            'right_leg_roll_joint': 0.,     #6
+            'right_leg_yaw_joint': 0.,      #7
+            'right_leg_pitch_joint': 0.,    #8
+            'right_knee_joint': 0.,         #9
+            'right_ankle_pitch_joint': 0.,  #10
+            'right_ankle_roll_joint': 0.,   #11
+        }
+
+    class control(XBotLCfg.control):
+        # PD Drive parameters:
+        stiffness = {'leg_roll': 200.0, 'leg_pitch': 350.0, 'leg_yaw': 200.0,
+                     'knee': 350.0, 'ankle': 15}
+        damping = {'leg_roll': 10, 'leg_pitch': 10, 'leg_yaw':
+                   10, 'knee': 10, 'ankle': 10}
+        
+    class rewards(XBotLCfg.rewards):
+        class scales(XBotLCfg.rewards.scales):
+            # ref_joint_pos = 2.2
+            other_joint_pos = 2.0
+            arms_joint_pos = 0.0
+            legs_joint_pos = 2.0
+
+    class asset(XBotLCfg.asset):
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/XBot/urdf/XBot-LNoArm.urdf'
 
 class XBotLCfgPPO(LeggedRobotCfgPPO):
     seed = 5
@@ -248,7 +333,7 @@ class XBotLCfgPPO(LeggedRobotCfgPPO):
         policy_class_name = 'ActorCritic'
         algorithm_class_name = 'PPO'
         num_steps_per_env = 60  # per iteration
-        max_iterations = 3001  # number of policy updates
+        max_iterations = 1501  # number of policy updates
 
         # logging
         save_interval = 100  # Please check for potential savings every `save_interval` iterations.

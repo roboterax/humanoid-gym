@@ -194,6 +194,7 @@ class LeggedRobot(BaseTask):
         self.last_dof_vel[env_ids] = 0.
         self.feet_air_time[env_ids] = 0.
         self.episode_length_buf[env_ids] = 0
+        self.phase_length_buf[env_ids] = 0
         self.reset_buf[env_ids] = 1
         # fill extras
         self.extras["episode"] = {}
@@ -306,6 +307,7 @@ class LeggedRobot(BaseTask):
             Default behaviour: Compute ang vel command based on target and heading, compute measured terrain heights and randomly push robots
         """
         # 
+        self.phase_length_buf += 1
         env_ids = (self.episode_length_buf % int(self.cfg.commands.resampling_time / self.dt)==0).nonzero(as_tuple=False).flatten()
         self._resample_commands(env_ids)
         if self.cfg.commands.heading_command:
@@ -385,7 +387,11 @@ class LeggedRobot(BaseTask):
             self.root_states[env_ids, :2] += torch_rand_float(-1., 1., (len(env_ids), 2), device=self.device) # xy position within 1m of the center
         else:
             self.root_states[env_ids] = self.base_init_state
+            # print(f"self.base_init_state:{self.base_init_state}")
+            # print(f"self.env_origins[env_ids]:{self.env_origins[env_ids]}")
             self.root_states[env_ids, :3] += self.env_origins[env_ids]
+            # print(f"self.root_states1:{self.root_states}")
+
         # base velocities
         # self.root_states[env_ids, 7:13] = torch_rand_float(-0.05, 0.05, (len(env_ids), 6), device=self.device) # [7:10]: lin vel, [10:13]: ang vel
         if self.cfg.asset.fix_base_link:
@@ -447,6 +453,7 @@ class LeggedRobot(BaseTask):
 
         # create some wrapper tensors for different slices
         self.root_states = gymtorch.wrap_tensor(actor_root_state)
+        # print(f"self.root_states:{self.root_states}")
         self.dof_state = gymtorch.wrap_tensor(dof_state_tensor)
         self.dof_pos = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 0]
         self.dof_vel = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 1]
@@ -489,8 +496,9 @@ class LeggedRobot(BaseTask):
             # print(name)
             self.default_dof_pos[i] = self.cfg.init_state.default_joint_angles[name]
             found = False
+            # print(f"self.cfg.control.stiffness.keys():{self.cfg.control.stiffness.keys()}")
             for dof_name in self.cfg.control.stiffness.keys():
-
+                # print(f"dof_name:{dof_name}")
                 if dof_name in name:
                     self.p_gains[:, i] = self.cfg.control.stiffness[dof_name]
                     self.d_gains[:, i] = self.cfg.control.damping[dof_name]
@@ -637,6 +645,7 @@ class LeggedRobot(BaseTask):
         self.base_init_state = to_torch(base_init_state_list, device=self.device, requires_grad=False)
         start_pose = gymapi.Transform()
         start_pose.p = gymapi.Vec3(*self.base_init_state[:3])
+        # print(f"start_pose:{start_pose.p}")
 
         self._get_env_origins()
         env_lower = gymapi.Vec3(0., 0., 0.)
@@ -653,6 +662,7 @@ class LeggedRobot(BaseTask):
             pos = self.env_origins[i].clone()
             pos[:2] += torch_rand_float(-1., 1., (2,1), device=self.device).squeeze(1)
             start_pose.p = gymapi.Vec3(*pos)
+            # print(f"start_pose.p:{start_pose.p}")
             
             rigid_shape_props = self._process_rigid_shape_props(rigid_shape_props_asset, i)
             self.gym.set_asset_rigid_shape_properties(robot_asset, rigid_shape_props)
@@ -706,6 +716,7 @@ class LeggedRobot(BaseTask):
             self.env_origins[:, 0] = spacing * xx.flatten()[:self.num_envs]
             self.env_origins[:, 1] = spacing * yy.flatten()[:self.num_envs]
             self.env_origins[:, 2] = 0.
+            # print(f"self.env_origins:{self.env_origins}")
 
     def _parse_cfg(self, cfg):
         self.dt = self.cfg.control.decimation * self.sim_params.dt

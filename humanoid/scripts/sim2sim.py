@@ -130,11 +130,11 @@ def run_mujoco(policy, cfg):
             obs[0, 2] = cmd.vx * cfg.normalization.obs_scales.lin_vel
             obs[0, 3] = cmd.vy * cfg.normalization.obs_scales.lin_vel
             obs[0, 4] = cmd.dyaw * cfg.normalization.obs_scales.ang_vel
-            obs[0, 5:17] = q * cfg.normalization.obs_scales.dof_pos
-            obs[0, 17:29] = dq * cfg.normalization.obs_scales.dof_vel
-            obs[0, 29:41] = action
-            obs[0, 41:44] = omega
-            obs[0, 44:47] = eu_ang
+            obs[0, 5:23] = q * cfg.normalization.obs_scales.dof_pos
+            obs[0, 23:41] = dq * cfg.normalization.obs_scales.dof_vel
+            obs[0, 41:59] = action
+            obs[0, 59:62] = omega
+            obs[0, 62:65] = eu_ang
 
             obs = np.clip(obs, -cfg.normalization.clip_observations, cfg.normalization.clip_observations)
 

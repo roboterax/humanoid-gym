@@ -113,6 +113,7 @@ def get_load_path(root, load_run=-1, checkpoint=-1):
 
     try:
         runs = os.listdir(root)
+        print(f"runs:{runs}")
         try:
             runs.sort(key=lambda x: (month_to_number(x[:3]), int(x[3:5]), x[6:]))
         except ValueError as e:
@@ -123,6 +124,7 @@ def get_load_path(root, load_run=-1, checkpoint=-1):
         last_run = os.path.join(root, runs[-1])
     except:
         raise ValueError("No runs in this directory: " + root)
+
     if load_run == -1:
         load_run = last_run
     else:

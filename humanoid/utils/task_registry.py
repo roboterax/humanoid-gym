@@ -147,7 +147,6 @@ class TaskRegistry():
         train_cfg_dict = class_to_dict(train_cfg)
         env_cfg_dict = class_to_dict(self.env_cfg_for_wandb)
         all_cfg = {**train_cfg_dict, **env_cfg_dict}
-        
         runner_class = eval(train_cfg_dict["runner_class_name"])
         runner = runner_class(env, all_cfg, log_dir, device=args.rl_device)
         #save resume path before creating a new log_dir
