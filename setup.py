@@ -42,6 +42,7 @@ setup(
     description='Isaac Gym environments for humanoid robot',
     install_requires=['isaacgym',  # preview4
                       'wandb',
+                      'DateTime',  # used for sort month
                       'tensorboard',
                       'tqdm',
                       'numpy==1.23.5',
